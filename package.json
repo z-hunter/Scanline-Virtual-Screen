@@ -2,8 +2,17 @@
   "name": "scanline-virtual-screen",
   "version": "1.0.2",
   "private": true,
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/z-hunter/Scanline-Virtual-Screen.git"
+  },
+  "bugs": {
+    "url": "https://github.com/z-hunter/Scanline-Virtual-Screen/issues"
+  },
+  "homepage": "https://github.com/z-hunter/Scanline-Virtual-Screen#readme",
   "type": "module",
-  "files": ["dist", "src/presets", "README.md", "LICENSE"],
+  "files": ["dist", "src/presets", "docs", "README.md", "LICENSE"],
   "scripts": {
     "build": "tsc -p tsconfig.build.json && node -e \"const fs=require('fs');fs.mkdirSync('dist/react',{recursive:true});fs.copyFileSync('src/react/styles.css','dist/react/styles.css')\"",
     "prepare": "npm run build",
