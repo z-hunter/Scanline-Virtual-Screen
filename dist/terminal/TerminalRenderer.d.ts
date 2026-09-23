@@ -1,7 +1,7 @@
 import type { Terminal } from '@xterm/xterm';
-import type { CRTColorMode, CRTSettings } from '../core/CRTFilter';
-import type { TerminalSearchMatch } from './terminal-search';
-import { type TerminalColorProfile } from '../core/color-profiles';
+import type { CRTColorMode, CRTSettings } from '../core/CRTFilter.js';
+import type { TerminalSearchMatch } from './terminal-search.js';
+import { type TerminalColorProfile } from '../core/color-profiles.js';
 export type CopyPoint = {
     row: number;
     column: number;

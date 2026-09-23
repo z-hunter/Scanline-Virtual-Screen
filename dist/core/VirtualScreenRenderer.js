@@ -1,5 +1,5 @@
-import { CRTFilter } from './CRTFilter';
-import { OverlayCompositor } from './overlays';
+import { CRTFilter } from './CRTFilter.js';
+import { OverlayCompositor } from './overlays.js';
 export class VirtualScreenRenderer {
     output;
     compositor = new OverlayCompositor();

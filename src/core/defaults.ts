@@ -1,5 +1,5 @@
-import type { CRTSettings } from './CRTFilter';
-import { DEFAULT_COLOR_PROFILE_ID } from './color-profiles';
+import type { CRTSettings } from './CRTFilter.js';
+import { DEFAULT_COLOR_PROFILE_ID } from './color-profiles.js';
 
 export const DEFAULT_CRT_SETTINGS: Readonly<CRTSettings> = Object.freeze({
   crtEmulation: true,

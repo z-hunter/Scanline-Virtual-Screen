@@ -1,4 +1,4 @@
-import { normalizeProfile, type ScreenProfile } from '../core/profile';
+import { normalizeProfile, type ScreenProfile } from '../core/profile.js';
 import commodore from './Commodore 8-bit (1985).json';
 import cyberpunkWide from './Cyberpunk wide.json';
 import cyberpunk from './Cyberpunk.json';

@@ -1,5 +1,5 @@
-import type { CRTSettings, CursorStyle } from './CRTFilter';
-import { type ColorProfileId } from './color-profiles';
+import type { CRTSettings, CursorStyle } from './CRTFilter.js';
+import { type ColorProfileId } from './color-profiles.js';
 type TerminalKeys = 'colorProfile' | 'consoleFont' | 'fallbackFont' | 'consoleFontSize' | 'cellWidthAdjustment' | 'cellHeightAdjustment' | 'cursorStyle' | 'cursorBrightness';
 export type TerminalSettings = {
     colorProfile: ColorProfileId;

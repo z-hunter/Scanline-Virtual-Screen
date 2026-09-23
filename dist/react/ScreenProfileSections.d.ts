@@ -1,4 +1,4 @@
-import type { ScreenMode, ScreenProfile } from '../core/profile';
+import type { ScreenMode, ScreenProfile } from '../core/profile.js';
 export type PresetControlState = {
     name: string;
     draftName: string;

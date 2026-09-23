@@ -1,3 +1,3 @@
-export * from './TerminalRenderer';
-export * from './terminal-search';
+export * from './TerminalRenderer.js';
+export * from './terminal-search.js';
 //# sourceMappingURL=index.d.ts.map

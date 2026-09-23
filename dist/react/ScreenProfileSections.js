@@ -1,5 +1,5 @@
 import { jsx as _jsx, jsxs as _jsxs, Fragment as _Fragment } from "react/jsx-runtime";
-import { COLOR_PROFILES } from '../core/color-profiles';
+import { COLOR_PROFILES } from '../core/color-profiles.js';
 export function DisplaySettingsSection({ value, modes, onChange }) {
     return _jsx(_Fragment, { children: modes.length > 1 && _jsxs("label", { className: "resolution-control", children: ["Virtual resolution", _jsx("select", { value: value.virtualScreen.modeId, onChange: (event) => onChange({ ...value, virtualScreen: { modeId: event.target.value } }), children: modes.map((mode) => _jsx("option", { value: mode.id, children: mode.label ?? mode.id }, mode.id)) })] }) });
 }

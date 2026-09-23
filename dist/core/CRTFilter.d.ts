@@ -1,4 +1,4 @@
-import type { ColorProfileId } from './color-profiles';
+import type { ColorProfileId } from './color-profiles.js';
 export type CRTColorMode = 'color' | 'bw' | 'green' | 'green-p39' | 'amber' | 'blue';
 export type CRTMaskType = 'off' | 'aperture' | 'slot' | 'shadow';
 export type BloomAlgorithm = 'soft' | 'spiral';

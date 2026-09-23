@@ -1,5 +1,5 @@
-import type { ScreenMode, ScreenProfile, TerminalSettings } from '../core/profile';
-import { COLOR_PROFILES, type ColorProfileId } from '../core/color-profiles';
+import type { ScreenMode, ScreenProfile, TerminalSettings } from '../core/profile.js';
+import { COLOR_PROFILES, type ColorProfileId } from '../core/color-profiles.js';
 
 export type PresetControlState = { name: string; draftName: string; dirty: boolean };
 

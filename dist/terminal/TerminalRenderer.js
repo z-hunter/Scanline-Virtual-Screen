@@ -1,4 +1,4 @@
-import { colorProfile, profileColor, remapLegacyRgb } from '../core/color-profiles';
+import { colorProfile, profileColor, remapLegacyRgb } from '../core/color-profiles.js';
 const MIN_SCROLL_OVERLAP = 4;
 const MIN_SCROLL_TEXT_ROWS = 3;
 const MAX_PRESENTATION_MISMATCH_ROWS = 2;

@@ -1,6 +1,6 @@
-import type { CRTSettings, CursorStyle } from './CRTFilter';
-import { DEFAULT_CRT_SETTINGS } from './defaults';
-import { isColorProfile, type ColorProfileId } from './color-profiles';
+import type { CRTSettings, CursorStyle } from './CRTFilter.js';
+import { DEFAULT_CRT_SETTINGS } from './defaults.js';
+import { isColorProfile, type ColorProfileId } from './color-profiles.js';
 
 type TerminalKeys = 'colorProfile' | 'consoleFont' | 'fallbackFont' | 'consoleFontSize' | 'cellWidthAdjustment' | 'cellHeightAdjustment' | 'cursorStyle' | 'cursorBrightness';
 

@@ -1,1 +1,1 @@
-export * from './ScreenProfileSections';
+export * from './ScreenProfileSections.js';

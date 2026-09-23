@@ -1,4 +1,4 @@
-import { DEFAULT_COLOR_PROFILE_ID } from './color-profiles';
+import { DEFAULT_COLOR_PROFILE_ID } from './color-profiles.js';
 export const DEFAULT_CRT_SETTINGS = Object.freeze({
     crtEmulation: true,
     colorProfile: DEFAULT_COLOR_PROFILE_ID,

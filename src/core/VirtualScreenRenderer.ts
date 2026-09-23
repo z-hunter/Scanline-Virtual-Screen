@@ -1,5 +1,5 @@
-import { CRTFilter, type CRTSettings } from './CRTFilter';
-import { OverlayCompositor, type ScreenOverlay } from './overlays';
+import { CRTFilter, type CRTSettings } from './CRTFilter.js';
+import { OverlayCompositor, type ScreenOverlay } from './overlays.js';
 
 export class VirtualScreenRenderer {
   readonly compositor = new OverlayCompositor();

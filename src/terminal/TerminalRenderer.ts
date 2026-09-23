@@ -1,7 +1,7 @@
 import type { IBufferCell, Terminal } from '@xterm/xterm';
-import type { CRTColorMode, CRTSettings } from '../core/CRTFilter';
-import type { TerminalSearchMatch } from './terminal-search';
-import { colorProfile, profileColor, remapLegacyRgb, type TerminalColorProfile } from '../core/color-profiles';
+import type { CRTColorMode, CRTSettings } from '../core/CRTFilter.js';
+import type { TerminalSearchMatch } from './terminal-search.js';
+import { colorProfile, profileColor, remapLegacyRgb, type TerminalColorProfile } from '../core/color-profiles.js';
 
 export type CopyPoint = { row: number; column: number };
 export type CopySelection = { start: CopyPoint; end: CopyPoint };

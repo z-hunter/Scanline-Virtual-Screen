@@ -1,5 +1,5 @@
-import { DEFAULT_CRT_SETTINGS } from './defaults';
-import { isColorProfile } from './color-profiles';
+import { DEFAULT_CRT_SETTINGS } from './defaults.js';
+import { isColorProfile } from './color-profiles.js';
 const terminalKeys = new Set([
     'colorProfile', 'consoleFont', 'fallbackFont', 'consoleFontSize', 'cellWidthAdjustment',
     'cellHeightAdjustment', 'cursorStyle', 'cursorBrightness',
