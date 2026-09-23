@@ -1,12 +1,12 @@
 import type { IBufferCell, Terminal } from '@xterm/xterm';
 import type { CRTColorMode, CRTSettings } from '../core/CRTFilter.js';
-import type { TerminalSearchMatch } from './terminal-search.js';
 import { colorProfile, profileColor, remapLegacyRgb, type TerminalColorProfile } from '../core/color-profiles.js';
 
 export type CopyPoint = { row: number; column: number };
 export type CopySelection = { start: CopyPoint; end: CopyPoint };
 export type Resolution = { id: string; width?: number; height?: number };
 export type TabColor = { background: string; foreground: string };
+export type TextHighlightRange = { line: number; startColumn: number; endColumn: number };
 type LumaFrame = { width: number; height: number; cellWidth: number; cellHeight: number; padding: number };
 type BufferLine = { getCell(column: number, cell?: IBufferCell): IBufferCell | undefined };
 export type ScrollCandidate = { deltaRows: number; topRow: number; bottomRow: number; overlapRows: number; matchTopRow: number; matchBottomRow: number; presentationMismatchRows: number[] };
@@ -285,9 +285,9 @@ export class TerminalRenderer {
   private readonly scrollFrameCanvas = document.createElement('canvas');
   private terminal: Terminal | null = null;
   private selection: CopySelection | null = null;
-  private searchMatches: TerminalSearchMatch[] = [];
-  private searchMatchesByLine = new Map<number, { match: TerminalSearchMatch; index: number }[]>();
-  private activeSearchMatch = -1;
+  private textHighlights: TextHighlightRange[] = [];
+  private textHighlightsByLine = new Map<number, { range: TextHighlightRange; index: number }[]>();
+  private activeTextHighlight = -1;
   private dirty = true;
   private fullDirty = true;
   private focused = true;
@@ -468,16 +468,16 @@ export class TerminalRenderer {
   get averageLuma(): number { return this.sourceLuma; }
   get hasMeasuredLuma(): boolean { return this.hasMeasuredSourceLuma; }
   setSelection(selection: CopySelection | null): void { if (selection || this.selection) this.cancelScroll(); this.selection = selection; this.markDirty(); }
-  setSearchMatches(matches: TerminalSearchMatch[], activeIndex = -1): void {
+  setTextHighlights(ranges: readonly TextHighlightRange[], activeIndex = -1): void {
     this.cancelScroll();
-    this.searchMatches = matches;
-    this.searchMatchesByLine = new Map();
-    matches.forEach((match, index) => {
-      const entries = this.searchMatchesByLine.get(match.line) ?? [];
-      entries.push({ match, index });
-      this.searchMatchesByLine.set(match.line, entries);
+    this.textHighlights = [...ranges];
+    this.textHighlightsByLine = new Map();
+    ranges.forEach((range, index) => {
+      const entries = this.textHighlightsByLine.get(range.line) ?? [];
+      entries.push({ range, index });
+      this.textHighlightsByLine.set(range.line, entries);
     });
-    this.activeSearchMatch = activeIndex;
+    this.activeTextHighlight = activeIndex;
     this.markDirty();
   }
   cellAtPoint(clientX: number, clientY: number, output: HTMLCanvasElement, settings: CRTSettings) {
@@ -677,9 +677,9 @@ export class TerminalRenderer {
   private drawRow(ctx: CanvasRenderingContext2D, line: BufferLine | undefined, row: number, cols: number, viewportY: number, cell: IBufferCell, profile: TerminalColorProfile, offset: { x: number; y: number }, cellSize: { width: number; height: number }, baseFont: string): void {
     const y = offset.y + cellSize.height * (row + .5); ctx.globalAlpha = 1; ctx.fillStyle = profile.background; ctx.fillRect(0, Math.floor(y - cellSize.height / 2), this.sourceCanvas.width, Math.ceil(cellSize.height)); if (!line) return;
     const selectionStart = this.selection ? this.selection.start.row * cols + this.selection.start.column : -1; const selectionEnd = this.selection ? this.selection.end.row * cols + this.selection.end.column : -1;
-    const lineSearchMatches = this.searchMatchesByLine.get(viewportY + row) ?? [];
+    const lineTextHighlights = this.textHighlightsByLine.get(viewportY + row) ?? [];
     for (let column = 0; column < cols; column += 1) {
-      const current = line.getCell(column, cell); if (!current || current.getWidth() === 0) continue; let fg = cellColor(current, true, profile); let bg = cellColor(current, false, profile); if (current.isInverse()) [fg, bg] = [bg, fg]; const x = offset.x + cellSize.width * column; const left = Math.floor(x); const top = Math.floor(y - cellSize.height / 2); const width = Math.ceil(cellSize.width * current.getWidth()); const height = Math.ceil(cellSize.height); if (bg !== profile.background) { ctx.globalAlpha = 1; ctx.fillStyle = bg; ctx.fillRect(left, top, width, height); } const point = (viewportY + row) * cols + column; if (this.selection && point >= Math.min(selectionStart, selectionEnd) && point <= Math.max(selectionStart, selectionEnd)) { ctx.globalAlpha = 1; ctx.fillStyle = 'rgba(125, 210, 255, 0.42)'; ctx.fillRect(left, top, width, height); } const searchEntry = lineSearchMatches.find((entry) => column >= entry.match.startColumn && column < entry.match.endColumn); if (searchEntry) { const searchAlpha = searchEntry.index === this.activeSearchMatch ? .78 : .34; ctx.globalAlpha = 1; ctx.fillStyle = searchEntry.index === this.activeSearchMatch ? 'rgba(255, 208, 92, 0.78)' : 'rgba(255, 208, 92, 0.34)'; ctx.fillRect(left, top, width, height); fg = accessibleTextColor(fg, blendColor(bg, '#ffd05c', searchAlpha)); } const chars = current.getChars(); const invisible = current.isInvisible(); const bold = cellAttribute(current, 'isBold'); const italic = cellAttribute(current, 'isItalic'); const underline = cellAttribute(current, 'isUnderline'); const strikethrough = cellAttribute(current, 'isStrikethrough'); const overline = cellAttribute(current, 'isOverline'); if (!invisible && (chars || underline || strikethrough || overline)) {
+      const current = line.getCell(column, cell); if (!current || current.getWidth() === 0) continue; let fg = cellColor(current, true, profile); let bg = cellColor(current, false, profile); if (current.isInverse()) [fg, bg] = [bg, fg]; const x = offset.x + cellSize.width * column; const left = Math.floor(x); const top = Math.floor(y - cellSize.height / 2); const width = Math.ceil(cellSize.width * current.getWidth()); const height = Math.ceil(cellSize.height); if (bg !== profile.background) { ctx.globalAlpha = 1; ctx.fillStyle = bg; ctx.fillRect(left, top, width, height); } const point = (viewportY + row) * cols + column; if (this.selection && point >= Math.min(selectionStart, selectionEnd) && point <= Math.max(selectionStart, selectionEnd)) { ctx.globalAlpha = 1; ctx.fillStyle = 'rgba(125, 210, 255, 0.42)'; ctx.fillRect(left, top, width, height); } const highlightEntry = lineTextHighlights.find((entry) => column >= entry.range.startColumn && column < entry.range.endColumn); if (highlightEntry) { const highlightAlpha = highlightEntry.index === this.activeTextHighlight ? .78 : .34; ctx.globalAlpha = 1; ctx.fillStyle = highlightEntry.index === this.activeTextHighlight ? 'rgba(255, 208, 92, 0.78)' : 'rgba(255, 208, 92, 0.34)'; ctx.fillRect(left, top, width, height); fg = accessibleTextColor(fg, blendColor(bg, '#ffd05c', highlightAlpha)); } const chars = current.getChars(); const invisible = current.isInvisible(); const bold = cellAttribute(current, 'isBold'); const italic = cellAttribute(current, 'isItalic'); const underline = cellAttribute(current, 'isUnderline'); const strikethrough = cellAttribute(current, 'isStrikethrough'); const overline = cellAttribute(current, 'isOverline'); if (!invisible && (chars || underline || strikethrough || overline)) {
         ctx.globalAlpha = current.isDim() ? .6 : 1; ctx.fillStyle = fg; if (chars) { ctx.font = `${italic ? 'italic ' : ''}${bold ? 'bold ' : ''}${baseFont}`; }
         if (chars) { if (!drawContinuousVertical(ctx, chars, x, top, cellSize)) ctx.fillText(chars, x, y, width); }
         if (overline) ctx.fillRect(left, top, width, 1);

@@ -1,6 +1,5 @@
 import type { Terminal } from '@xterm/xterm';
 import type { CRTColorMode, CRTSettings } from '../core/CRTFilter.js';
-import type { TerminalSearchMatch } from './terminal-search.js';
 import { type TerminalColorProfile } from '../core/color-profiles.js';
 export type CopyPoint = {
     row: number;
@@ -18,6 +17,11 @@ export type Resolution = {
 export type TabColor = {
     background: string;
     foreground: string;
+};
+export type TextHighlightRange = {
+    line: number;
+    startColumn: number;
+    endColumn: number;
 };
 type LumaFrame = {
     width: number;
@@ -75,9 +79,9 @@ export declare class TerminalRenderer {
     private readonly scrollFrameCanvas;
     private terminal;
     private selection;
-    private searchMatches;
-    private searchMatchesByLine;
-    private activeSearchMatch;
+    private textHighlights;
+    private textHighlightsByLine;
+    private activeTextHighlight;
     private dirty;
     private fullDirty;
     private focused;
@@ -141,7 +145,7 @@ export declare class TerminalRenderer {
     get averageLuma(): number;
     get hasMeasuredLuma(): boolean;
     setSelection(selection: CopySelection | null): void;
-    setSearchMatches(matches: TerminalSearchMatch[], activeIndex?: number): void;
+    setTextHighlights(ranges: readonly TextHighlightRange[], activeIndex?: number): void;
     cellAtPoint(clientX: number, clientY: number, output: HTMLCanvasElement, settings: CRTSettings): {
         col: number;
         row: number;

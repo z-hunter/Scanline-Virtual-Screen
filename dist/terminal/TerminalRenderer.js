@@ -349,9 +349,9 @@ export class TerminalRenderer {
     scrollFrameCanvas = document.createElement('canvas');
     terminal = null;
     selection = null;
-    searchMatches = [];
-    searchMatchesByLine = new Map();
-    activeSearchMatch = -1;
+    textHighlights = [];
+    textHighlightsByLine = new Map();
+    activeTextHighlight = -1;
     dirty = true;
     fullDirty = true;
     focused = true;
@@ -601,16 +601,16 @@ export class TerminalRenderer {
     get hasMeasuredLuma() { return this.hasMeasuredSourceLuma; }
     setSelection(selection) { if (selection || this.selection)
         this.cancelScroll(); this.selection = selection; this.markDirty(); }
-    setSearchMatches(matches, activeIndex = -1) {
+    setTextHighlights(ranges, activeIndex = -1) {
         this.cancelScroll();
-        this.searchMatches = matches;
-        this.searchMatchesByLine = new Map();
-        matches.forEach((match, index) => {
-            const entries = this.searchMatchesByLine.get(match.line) ?? [];
-            entries.push({ match, index });
-            this.searchMatchesByLine.set(match.line, entries);
+        this.textHighlights = [...ranges];
+        this.textHighlightsByLine = new Map();
+        ranges.forEach((range, index) => {
+            const entries = this.textHighlightsByLine.get(range.line) ?? [];
+            entries.push({ range, index });
+            this.textHighlightsByLine.set(range.line, entries);
         });
-        this.activeSearchMatch = activeIndex;
+        this.activeTextHighlight = activeIndex;
         this.markDirty();
     }
     cellAtPoint(clientX, clientY, output, settings) {
@@ -943,7 +943,7 @@ export class TerminalRenderer {
             return;
         const selectionStart = this.selection ? this.selection.start.row * cols + this.selection.start.column : -1;
         const selectionEnd = this.selection ? this.selection.end.row * cols + this.selection.end.column : -1;
-        const lineSearchMatches = this.searchMatchesByLine.get(viewportY + row) ?? [];
+        const lineTextHighlights = this.textHighlightsByLine.get(viewportY + row) ?? [];
         for (let column = 0; column < cols; column += 1) {
             const current = line.getCell(column, cell);
             if (!current || current.getWidth() === 0)
@@ -968,13 +968,13 @@ export class TerminalRenderer {
                 ctx.fillStyle = 'rgba(125, 210, 255, 0.42)';
                 ctx.fillRect(left, top, width, height);
             }
-            const searchEntry = lineSearchMatches.find((entry) => column >= entry.match.startColumn && column < entry.match.endColumn);
-            if (searchEntry) {
-                const searchAlpha = searchEntry.index === this.activeSearchMatch ? .78 : .34;
+            const highlightEntry = lineTextHighlights.find((entry) => column >= entry.range.startColumn && column < entry.range.endColumn);
+            if (highlightEntry) {
+                const highlightAlpha = highlightEntry.index === this.activeTextHighlight ? .78 : .34;
                 ctx.globalAlpha = 1;
-                ctx.fillStyle = searchEntry.index === this.activeSearchMatch ? 'rgba(255, 208, 92, 0.78)' : 'rgba(255, 208, 92, 0.34)';
+                ctx.fillStyle = highlightEntry.index === this.activeTextHighlight ? 'rgba(255, 208, 92, 0.78)' : 'rgba(255, 208, 92, 0.34)';
                 ctx.fillRect(left, top, width, height);
-                fg = accessibleTextColor(fg, blendColor(bg, '#ffd05c', searchAlpha));
+                fg = accessibleTextColor(fg, blendColor(bg, '#ffd05c', highlightAlpha));
             }
             const chars = current.getChars();
             const invisible = current.isInvisible();
