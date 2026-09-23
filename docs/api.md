@@ -62,6 +62,8 @@ type ScreenOverlay = {
 
 `TerminalRenderer` binds an xterm `Terminal`, tracks dirty rows, and paints its source canvas. It is an optional source adapter, not part of the core render loop contract.
 
+Smooth scrolling is explicit: `beginBufferScroll(fromViewportY, toViewportY)` animates a normal-buffer viewport, while `beginRegionScroll({ deltaRows, topRow, bottomRow })` animates a host-selected region in either buffer. SVS validates row bounds and animates the supplied operation; it does not infer scrolling from screen contents. `cancelScroll()`, `consumeScrollStart()`, and `isScrollAnimating` expose lifecycle state.
+
 Exported helpers include `terminalDimensions`, `fontCellSize`, `canvasFont`, terminal colour helpers, selection types, and `TextHighlightRange`. `TerminalRenderer.setTextHighlights()` paints host-provided ranges without knowing how they were produced. Search, matching, navigation and search state remain host responsibilities. The terminal entrypoint is intended for hosts that already use xterm; it does not create or manage a shell, PTY, tab, or persistence layer.
 
 ## `react`

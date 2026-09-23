@@ -57,3 +57,5 @@ The compositor copies the source canvas first, then draws overlays in stable asc
 `VirtualScreenRenderer` owns its compositor and, when enabled, its `CRTFilter`. Call `render()` from the host's frame loop and call `dispose()` when the output canvas is discarded, a tab closes, or the host replaces the WebGL context. Resize the host canvases before the next render and call `clearPersistence()` when a resize invalidates phosphor history.
 
 The facade is deliberately not a scheduler: it does not own `requestAnimationFrame`, `ResizeObserver`, tabs, or error UI.
+
+The terminal adapter does not inspect successive screens to discover TUI movement, maintain diagnostics, calculate tab colours, interpret host mode IDs, or render branded preview content. A host determines whether a terminal operation is a buffer scroll or a region scroll and calls the explicit API.

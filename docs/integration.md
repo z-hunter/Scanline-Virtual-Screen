@@ -39,6 +39,8 @@ Create the adapter when the host creates the terminal scene and dispose it when 
 
 If a host needs terminal-specific overlay interaction, it can subclass or wrap `TerminalRenderer` at its own boundary. Scanline Term's `ScanlineTerminalRenderer` is one example: it adds tab-local normalized image state without adding that state to SVS core.
 
+The host is responsible for TUI heuristics and diagnostics. When it has identified a stable region, it calls `beginRegionScroll()`; ordinary normal-buffer scrolling calls `beginBufferScroll()`. SVS only animates the supplied rows and never treats output text as evidence of a scroll.
+
 ## Controlled React sections
 
 The host owns profile state:

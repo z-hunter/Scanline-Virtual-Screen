@@ -15,7 +15,7 @@ Historical releases retain the license terms under which they were published. Do
 Until SVS is published to npm, install a tagged GitHub release over HTTPS:
 
 ```sh
-npm install git+https://github.com/z-hunter/Scanline-Virtual-Screen.git#v1.1.0
+npm install git+https://github.com/z-hunter/Scanline-Virtual-Screen.git#v3.0.0
 ```
 
 SVS exposes independent entrypoints:
