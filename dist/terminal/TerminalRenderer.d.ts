@@ -1,5 +1,5 @@
 import type { Terminal } from '@xterm/xterm';
-import type { CRTColorMode, CRTSettings } from '../core/CRTFilter.js';
+import type { CRTSettings } from '../core/CRTFilter.js';
 import { type TerminalColorProfile } from '../core/color-profiles.js';
 export type CopyPoint = {
     row: number;
@@ -9,19 +9,15 @@ export type CopySelection = {
     start: CopyPoint;
     end: CopyPoint;
 };
-export type Resolution = {
-    id: string;
-    width?: number;
-    height?: number;
-};
-export type TabColor = {
-    background: string;
-    foreground: string;
-};
 export type TextHighlightRange = {
     line: number;
     startColumn: number;
     endColumn: number;
+};
+export type TerminalScrollRegion = {
+    deltaRows: number;
+    topRow: number;
+    bottomRow: number;
 };
 type LumaFrame = {
     width: number;
@@ -30,24 +26,6 @@ type LumaFrame = {
     cellHeight: number;
     padding: number;
 };
-export type ScrollCandidate = {
-    deltaRows: number;
-    topRow: number;
-    bottomRow: number;
-    overlapRows: number;
-    matchTopRow: number;
-    matchBottomRow: number;
-    presentationMismatchRows: number[];
-};
-export type ScrollDetection = {
-    candidate: ScrollCandidate | null;
-    maxExactOverlap: number;
-    maxExactDelta: number | null;
-    rejection: string | null;
-};
-export declare const SMOOTH_SCROLL_DIAGNOSTICS = false;
-export declare function inspectVerticalScroll(previous: readonly string[], next: readonly string[], previousContent?: readonly string[], nextContent?: readonly string[]): ScrollDetection;
-export declare function detectVerticalScroll(previous: readonly string[], next: readonly string[], previousContent?: readonly string[], nextContent?: readonly string[]): ScrollCandidate | null;
 export declare function terminalPadding(width: number, height: number): number;
 export declare function canvasFont(fontSize: number, family: string, fallbackFont?: string): string;
 export declare function loadCanvasFont(family: string, bytes: number[]): Promise<void>;
@@ -68,8 +46,6 @@ export declare function terminalContentOffset(width: number, height: number, col
     y: number;
 };
 export declare function accessibleTextColor(foreground: string, background: string): string;
-export declare function applyTabColorMode(background: string, colorMode?: CRTColorMode, backgroundDesaturation?: number): string;
-export declare function terminalAverageColor(terminal: Terminal, profile: TerminalColorProfile, colorMode?: CRTColorMode, backgroundDesaturation?: number): TabColor;
 export declare function terminalAverageLuma(terminal: Terminal, profile: TerminalColorProfile, frame?: LumaFrame): number;
 export declare class TerminalRenderer {
     readonly sourceCanvas: HTMLCanvasElement;
@@ -86,16 +62,7 @@ export declare class TerminalRenderer {
     private fullDirty;
     private focused;
     private rowSignatures;
-    private rowContentSignatures;
-    private rowTexts;
-    private scrollDiagnostics;
-    private snapshotCols;
-    private snapshotRows;
-    private snapshotViewportY;
-    private snapshotBaseY;
     private snapshotBuffer;
-    private terminalOutputDirty;
-    private smoothScrollingEnabled;
     private cursorRow;
     private disposables;
     private sourceLuma;
@@ -110,13 +77,10 @@ export declare class TerminalRenderer {
     private scrollStarted;
     private scrollCellHeight;
     private scrollContentTop;
-    constructor();
     bindTerminal(terminal: Terminal | null, onScroll?: (viewportY: number) => void): void;
-    resizeSource(resolution: Resolution, output: HTMLCanvasElement): boolean;
-    setSmoothScrollingEnabled(enabled: boolean): void;
-    exportSmoothScrollDiagnostics(): string;
-    private recordSmoothScrollDiagnostic;
-    beginScroll(fromViewportY: number, toViewportY: number): boolean;
+    resizeSource(width: number, height: number): boolean;
+    beginBufferScroll(fromViewportY: number, toViewportY: number): boolean;
+    beginRegionScroll(region: TerminalScrollRegion): boolean;
     private scrollDuration;
     private scrollProgress;
     private scrollPosition;
@@ -155,12 +119,8 @@ export declare class TerminalRenderer {
     private drawCursor;
     private renderScroll;
     private lineHeight;
-    private rowText;
-    private longestTextOverlap;
-    private scrollBoundaryRows;
     private rowSignature;
     private drawRow;
-    private drawMock;
     dispose(): void;
 }
 export {};

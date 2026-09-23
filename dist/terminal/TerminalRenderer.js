@@ -1,105 +1,6 @@
 import { colorProfile, profileColor, remapLegacyRgb } from '../core/color-profiles.js';
-const MIN_SCROLL_OVERLAP = 4;
-const MIN_SCROLL_TEXT_ROWS = 3;
-const MAX_PRESENTATION_MISMATCH_ROWS = 2;
 const SMOOTH_SCROLL_PIXELS_PER_SECOND = 240;
 const FAST_SCROLL_THRESHOLD_ROWS = 6;
-// Enable temporarily when investigating a missed smooth-scroll candidate.
-export const SMOOTH_SCROLL_DIAGNOSTICS = false;
-function rowHasText(signature) { return signature.includes(':') ? /:[^,\s;]/.test(signature) : /\S/.test(signature); }
-export function inspectVerticalScroll(previous, next, previousContent = previous, nextContent = next) {
-    if (!previous.length || previous.length !== next.length || previousContent.length !== previous.length || nextContent.length !== next.length)
-        return { candidate: null, maxExactOverlap: 0, maxExactDelta: null, rejection: 'different-row-count' };
-    // ponytail: O(rows²) shift scan keeps the MVP exact; optimize only if profiling shows large grids need it.
-    const candidates = [];
-    let maxExactOverlap = 0;
-    let maxExactDelta = null;
-    let ambiguousRuns = false;
-    let insufficientText = false;
-    let unchangedIncoming = false;
-    const maxDelta = previous.length - MIN_SCROLL_OVERLAP;
-    for (let delta = -maxDelta; delta <= maxDelta; delta += 1) {
-        if (!delta)
-            continue;
-        let runStart = -1;
-        let exactStart = -1;
-        let presentationMismatchRows = [];
-        const runs = [];
-        const finish = (runEnd) => {
-            if (runStart >= 0 && presentationMismatchRows.length <= MAX_PRESENTATION_MISMATCH_ROWS)
-                runs.push({ start: runStart, end: runEnd, presentationMismatchRows });
-        };
-        const finishExact = (runEnd) => {
-            if (exactStart >= 0 && runEnd - exactStart > maxExactOverlap) {
-                maxExactOverlap = runEnd - exactStart;
-                maxExactDelta = delta;
-            }
-        };
-        for (let row = 0; row <= next.length; row += 1) {
-            const inRange = row < next.length && row + delta >= 0 && row + delta < previous.length;
-            const exact = inRange && next[row] === previous[row + delta];
-            const presentationOnly = inRange && !exact && nextContent[row] === previousContent[row + delta];
-            if (exact) {
-                if (exactStart < 0)
-                    exactStart = row;
-            }
-            else {
-                finishExact(row);
-                exactStart = -1;
-            }
-            if (exact || presentationOnly) {
-                if (runStart < 0) {
-                    runStart = row;
-                    presentationMismatchRows = [];
-                }
-                if (presentationOnly)
-                    presentationMismatchRows.push(row);
-            }
-            else {
-                finish(row);
-                runStart = -1;
-                presentationMismatchRows = [];
-            }
-        }
-        finishExact(next.length);
-        const longest = Math.max(...runs.map((run) => run.end - run.start), 0);
-        const bestRuns = runs.filter((run) => run.end - run.start === longest);
-        if (longest < MIN_SCROLL_OVERLAP)
-            continue;
-        if (bestRuns.length !== 1) {
-            ambiguousRuns = true;
-            continue;
-        }
-        const run = bestRuns[0];
-        const overlap = next.slice(run.start, run.end);
-        const textRows = overlap.filter(rowHasText);
-        if (textRows.length < MIN_SCROLL_TEXT_ROWS) {
-            insufficientText = true;
-            continue;
-        }
-        const topRow = Math.min(run.start, run.start + delta);
-        const bottomRow = Math.max(run.end, run.end + delta);
-        let incomingChanged = false;
-        const incomingStart = delta > 0 ? run.end : run.start + delta;
-        const incomingEnd = delta > 0 ? run.end + delta : run.start;
-        for (let row = incomingStart; row < incomingEnd; row += 1) {
-            if (next[row] !== previous[row]) {
-                incomingChanged = true;
-                break;
-            }
-        }
-        if (incomingChanged)
-            candidates.push({ deltaRows: delta, topRow, bottomRow, overlapRows: longest, matchTopRow: run.start, matchBottomRow: run.end, presentationMismatchRows: run.presentationMismatchRows });
-        else
-            unchangedIncoming = true;
-    }
-    candidates.sort((a, b) => b.overlapRows - a.overlapRows || Math.abs(a.deltaRows) - Math.abs(b.deltaRows));
-    const best = candidates[0];
-    const candidate = best && (!candidates[1] || best.overlapRows >= candidates[1].overlapRows + 2) ? best : null;
-    const rejection = candidate ? null : candidates.length > 1 ? 'ambiguous-candidates' : ambiguousRuns ? 'ambiguous-run' : insufficientText ? 'fewer-than-three-text-rows' : unchangedIncoming ? 'unchanged-incoming-band' : maxExactOverlap < MIN_SCROLL_OVERLAP ? 'no-four-row-exact-overlap' : 'no-eligible-candidate';
-    return { candidate, maxExactOverlap, maxExactDelta, rejection };
-}
-export function detectVerticalScroll(previous, next, previousContent = previous, nextContent = next) { return inspectVerticalScroll(previous, next, previousContent, nextContent).candidate; }
 const fontMetricsCache = new Map();
 const boxDrawingProfileCache = new Map();
 const loadedFontFaces = new Map();
@@ -261,45 +162,6 @@ function brightenColor(color, amount) {
         return color;
     return `#${rgb(color).map((channel) => Math.min(255, Math.round(channel * (1 + amount))).toString(16).padStart(2, '0')).join('')}`;
 }
-export function applyTabColorMode(background, colorMode = 'color', backgroundDesaturation = 0.5) {
-    if (colorMode === 'color')
-        return background;
-    const [red, green, blue] = rgb(background).map((channel) => channel / 255);
-    const luma = red * 0.2126 + green * 0.7152 + blue * 0.0722;
-    const tint = { bw: [1, 1, 1], green: [.45, 1, .62], 'green-p39': [.25, 1, .15], amber: [1.1, .68, .2], blue: [.42, .72, 1] }[colorMode] ?? [1, 1, 1];
-    const desaturation = Math.min(1, Math.max(0, backgroundDesaturation));
-    const channels = tint.map((channel) => luma * channel * (1 - desaturation) + luma * desaturation).map((channel) => Math.round(Math.min(1, channel) * 255));
-    return `#${channels.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
-}
-export function terminalAverageColor(terminal, profile, colorMode = 'color', backgroundDesaturation = 0.5) {
-    const buffer = terminal.buffer.active;
-    const cell = buffer.getNullCell();
-    const total = [0, 0, 0];
-    let count = 0;
-    for (let row = 0; row < terminal.rows; row += 1) {
-        const line = buffer.getLine(buffer.viewportY + row);
-        if (!line)
-            continue;
-        for (let column = 0; column < terminal.cols; column += 1) {
-            const current = line.getCell(column, cell);
-            if (!current)
-                continue;
-            let bg = rgb(cellColor(current, false, profile));
-            let fg = rgb(cellColor(current, true, profile));
-            if (current.isInverse && current.isInverse())
-                [bg, fg] = [fg, bg];
-            const ink = current.getChars() ? .22 : 0;
-            for (let channel = 0; channel < 3; channel += 1)
-                total[channel] += bg[channel] * (1 - ink) + fg[channel] * ink;
-            count += 1;
-        }
-    }
-    const average = total.map((channel) => Math.round(channel / Math.max(1, count)));
-    const background = applyTabColorMode(`#${average.map((channel) => channel.toString(16).padStart(2, '0')).join('')}`, colorMode, backgroundDesaturation);
-    const [red, green, blue] = rgb(background);
-    const luminance = (red * 299 + green * 587 + blue * 114) / 1000;
-    return { background, foreground: luminance > 145 ? '#101a14' : '#d7f5df' };
-}
 function luma([red, green, blue]) {
     return (red * 0.2126 + green * 0.7152 + blue * 0.0722) / 255;
 }
@@ -356,16 +218,7 @@ export class TerminalRenderer {
     fullDirty = true;
     focused = true;
     rowSignatures = [];
-    rowContentSignatures = [];
-    rowTexts = [];
-    scrollDiagnostics = [];
-    snapshotCols = -1;
-    snapshotRows = -1;
-    snapshotViewportY = -1;
-    snapshotBaseY = -1;
     snapshotBuffer = null;
-    terminalOutputDirty = false;
-    smoothScrollingEnabled = false;
     cursorRow = null;
     disposables = [];
     sourceLuma = 0.12;
@@ -380,21 +233,13 @@ export class TerminalRenderer {
     scrollStarted = false;
     scrollCellHeight = 16;
     scrollContentTop = 0;
-    constructor() { }
     bindTerminal(terminal, onScroll) {
         this.cancelScroll();
         this.disposables.forEach((item) => item.dispose());
         this.disposables = [];
         this.terminal = terminal;
         this.rowSignatures = [];
-        this.rowContentSignatures = [];
-        this.rowTexts = [];
-        this.snapshotCols = -1;
-        this.snapshotRows = -1;
-        this.snapshotViewportY = -1;
-        this.snapshotBaseY = -1;
         this.snapshotBuffer = null;
-        this.terminalOutputDirty = false;
         this.cursorRow = null;
         this.hasMeasuredSourceLuma = false;
         this.lastCursorPhase = -1;
@@ -406,9 +251,9 @@ export class TerminalRenderer {
         if (terminal)
             this.disposables.push(terminal.onCursorMove(() => this.markCursorMoved()), terminal.onWriteParsed(() => this.markTerminalDirty()), terminal.onScroll((viewportY) => { this.markDirty(); onScroll?.(viewportY); }));
     }
-    resizeSource(resolution, output) {
-        const width = resolution.id.startsWith('physical') ? output.width || 1 : resolution.width || 1;
-        const height = resolution.id.startsWith('physical') ? output.height || 1 : resolution.height || 1;
+    resizeSource(width, height) {
+        width = Math.max(1, Math.floor(width));
+        height = Math.max(1, Math.floor(height));
         this.cancelScroll();
         if (this.sourceCanvas.width === width && this.sourceCanvas.height === height) {
             this.markDirty();
@@ -427,26 +272,18 @@ export class TerminalRenderer {
         this.markDirty();
         return true;
     }
-    setSmoothScrollingEnabled(enabled) {
-        this.smoothScrollingEnabled = enabled;
-        if (!enabled && this.scrollTransition)
-            this.cancelScroll();
-    }
-    exportSmoothScrollDiagnostics() { return JSON.stringify({ version: 1, entries: this.scrollDiagnostics.map((entry) => JSON.parse(entry)) }, null, 2); }
-    recordSmoothScrollDiagnostic(entry) {
-        if (!SMOOTH_SCROLL_DIAGNOSTICS)
-            return;
-        this.scrollDiagnostics.push(JSON.stringify({ at: new Date().toISOString(), ...entry }));
-        if (this.scrollDiagnostics.length > 60)
-            this.scrollDiagnostics.shift();
-    }
-    beginScroll(fromViewportY, toViewportY) {
+    beginBufferScroll(fromViewportY, toViewportY) {
         if (!this.terminal || fromViewportY === toViewportY || this.terminal.buffer.active !== this.terminal.buffer.normal)
             return false;
-        const started = this.startScroll(toViewportY - fromViewportY, 0, this.terminal.rows, 'normal', Math.abs(toViewportY - fromViewportY) > FAST_SCROLL_THRESHOLD_ROWS, fromViewportY, toViewportY);
+        const started = this.startScroll(toViewportY - fromViewportY, 0, this.terminal.rows, 'buffer', Math.abs(toViewportY - fromViewportY) > FAST_SCROLL_THRESHOLD_ROWS, fromViewportY, toViewportY);
         if (started && this.scrollTransition)
             this.scrollTransition.expectedViewportY = toViewportY;
         return started;
+    }
+    beginRegionScroll(region) {
+        if (!this.terminal || !Number.isInteger(region.deltaRows) || !Number.isInteger(region.topRow) || !Number.isInteger(region.bottomRow) || !region.deltaRows || region.topRow < 0 || region.topRow >= region.bottomRow || region.bottomRow > this.terminal.rows)
+            return false;
+        return this.startScroll(region.deltaRows, region.topRow, region.bottomRow, 'region', Math.abs(region.deltaRows) > FAST_SCROLL_THRESHOLD_ROWS);
     }
     scrollDuration(distance, fast) {
         const pixels = Math.max(1, distance * this.lineHeight());
@@ -579,7 +416,7 @@ export class TerminalRenderer {
         this.markDirty();
     }
     markDirty() { this.dirty = true; this.fullDirty = true; }
-    markTerminalDirty() { this.dirty = true; this.terminalOutputDirty = true; }
+    markTerminalDirty() { this.dirty = true; }
     markCursorMoved() { this.cursorMoved = true; this.dirty = true; }
     isCursorBlinkActive() { return this.focused; }
     getCursorBlinkPhase(time) {
@@ -645,27 +482,17 @@ export class TerminalRenderer {
     draw(time, settings) {
         const source = this.sourceCanvas;
         const terminal = this.terminal;
-        if (!terminal) {
-            this.drawMock(time, settings);
-            this.composeTerminal(this.compositedCanvas);
-            return true;
-        }
+        if (!terminal)
+            return false;
         const buffer = terminal.buffer.active;
         if (this.snapshotBuffer !== buffer) {
             this.cancelScroll();
             this.snapshotBuffer = buffer;
             this.rowSignatures = [];
-            this.rowContentSignatures = [];
-            this.rowTexts = [];
-            this.snapshotCols = -1;
-            this.snapshotRows = -1;
-            this.snapshotViewportY = -1;
-            this.snapshotBaseY = -1;
-            this.terminalOutputDirty = false;
             this.dirty = true;
             this.fullDirty = true;
         }
-        if (this.scrollTransition?.kind === 'normal' && buffer.viewportY !== this.scrollTransition.expectedViewportY) {
+        if (this.scrollTransition?.kind === 'buffer' && buffer.viewportY !== this.scrollTransition.expectedViewportY) {
             this.cancelScroll();
             this.markDirty();
         }
@@ -696,15 +523,11 @@ export class TerminalRenderer {
         const nextCursorRow = cursorVisible && buffer.cursorY >= 0 && buffer.cursorY < terminal.rows ? buffer.cursorY : null;
         const changedRows = new Set();
         const nextSignatures = [];
-        const nextContentSignatures = [];
-        const nextTexts = [];
         if (this.dirty)
             for (let row = 0; row < terminal.rows; row += 1) {
                 const line = buffer.getLine(buffer.viewportY + row);
                 const signature = this.rowSignature(line, terminal.cols, cell);
                 nextSignatures.push(signature);
-                nextContentSignatures.push(this.rowSignature(line, terminal.cols, cell, true));
-                nextTexts.push(this.rowText(line, terminal.cols, cell));
                 if (this.fullDirty || signature !== this.rowSignatures[row])
                     changedRows.add(row);
             }
@@ -712,32 +535,9 @@ export class TerminalRenderer {
             changedRows.add(this.cursorRow);
         if (nextCursorRow !== null)
             changedRows.add(nextCursorRow);
-        const previousSignatures = this.rowSignatures;
-        const stableNormalViewport = buffer === terminal.buffer.normal && buffer.viewportY === buffer.baseY && buffer.viewportY === this.snapshotViewportY && buffer.baseY === this.snapshotBaseY;
-        if (this.terminalOutputDirty) {
-            const base = { buffer: buffer === terminal.buffer.alternate ? 'alternate' : buffer === terminal.buffer.normal ? 'normal' : 'other', cols: terminal.cols, rows: terminal.rows, viewportY: buffer.viewportY, baseY: buffer.baseY, previousViewportY: this.snapshotViewportY, previousBaseY: this.snapshotBaseY, fullDirty: this.fullDirty, selection: Boolean(this.selection), smoothEnabled: this.smoothScrollingEnabled };
-            if (!this.smoothScrollingEnabled)
-                this.recordSmoothScrollDiagnostic({ ...base, outcome: 'skipped', reason: 'disabled' });
-            else if (this.fullDirty)
-                this.recordSmoothScrollDiagnostic({ ...base, outcome: 'skipped', reason: 'full-repaint' });
-            else if (this.selection)
-                this.recordSmoothScrollDiagnostic({ ...base, outcome: 'skipped', reason: 'selection-active' });
-            else if (this.snapshotBuffer !== buffer || this.snapshotCols !== terminal.cols || this.snapshotRows !== terminal.rows || previousSignatures.length !== nextSignatures.length)
-                this.recordSmoothScrollDiagnostic({ ...base, outcome: 'skipped', reason: 'snapshot-mismatch', previousRows: previousSignatures.length });
-            else if (buffer !== terminal.buffer.alternate && !stableNormalViewport)
-                this.recordSmoothScrollDiagnostic({ ...base, outcome: 'skipped', reason: 'normal-viewport-or-scrollback-changed' });
-            else {
-                const detection = inspectVerticalScroll(previousSignatures, nextSignatures, this.rowContentSignatures, nextContentSignatures);
-                const textOverlap = detection.candidate ? null : this.longestTextOverlap(this.rowTexts, nextTexts);
-                this.recordSmoothScrollDiagnostic({ ...base, outcome: detection.candidate ? 'animated' : 'rejected', candidate: detection.candidate, boundaries: detection.candidate ? this.scrollBoundaryRows(detection.candidate, previousSignatures, this.rowTexts, nextSignatures, nextTexts) : null, exactOverlap: { rows: detection.maxExactOverlap, deltaRows: detection.maxExactDelta }, textOverlap, reason: detection.rejection });
-                if (detection.candidate)
-                    this.startScroll(detection.candidate.deltaRows, detection.candidate.topRow, detection.candidate.bottomRow, 'tui');
-            }
-        }
         if (changedRows.size === 0) {
             this.dirty = false;
             this.fullDirty = false;
-            this.terminalOutputDirty = false;
             this.lastCursorPhase = cursorPhase;
             if (this.scrollTransition && !this.scrollTargetReady)
                 this.composeTerminal(this.scrollTargetCanvas);
@@ -763,19 +563,10 @@ export class TerminalRenderer {
             this.hasMeasuredSourceLuma = true;
         }
         this.rowSignatures = nextSignatures.length ? nextSignatures : this.rowSignatures;
-        this.rowContentSignatures = nextContentSignatures.length ? nextContentSignatures : this.rowContentSignatures;
-        this.rowTexts = nextTexts.length ? nextTexts : this.rowTexts;
-        if (nextSignatures.length) {
-            this.snapshotCols = terminal.cols;
-            this.snapshotRows = terminal.rows;
-            this.snapshotViewportY = buffer.viewportY;
-            this.snapshotBaseY = buffer.baseY;
-        }
         this.cursorRow = nextCursorRow;
         this.lastCursorPhase = cursorPhase;
         this.dirty = false;
         this.fullDirty = false;
-        this.terminalOutputDirty = false;
         if (this.scrollTransition)
             this.composeTerminal(this.scrollTargetCanvas);
         else
@@ -869,54 +660,7 @@ export class TerminalRenderer {
         return true;
     }
     lineHeight() { return this.scrollCellHeight; }
-    rowText(line, cols, cell) {
-        if (!line)
-            return '';
-        let text = '';
-        for (let column = 0; column < cols; column += 1) {
-            const current = line.getCell(column, cell);
-            if (!current || current.getWidth() === 0)
-                continue;
-            text += current.getChars() || ' '.repeat(current.getWidth());
-        }
-        return text.trimEnd().slice(0, 240);
-    }
-    longestTextOverlap(previous, next) {
-        if (previous.length !== next.length)
-            return null;
-        let best = null;
-        for (let delta = 1 - previous.length; delta < previous.length; delta += 1) {
-            if (!delta)
-                continue;
-            let start = -1;
-            for (let row = 0; row <= next.length; row += 1) {
-                const matches = row < next.length && row + delta >= 0 && row + delta < previous.length && next[row] === previous[row + delta];
-                if (matches && start < 0)
-                    start = row;
-                if (!matches && start >= 0) {
-                    const overlapRows = row - start;
-                    if (!best || overlapRows > best.overlapRows)
-                        best = { deltaRows: delta, start, overlapRows };
-                    start = -1;
-                }
-            }
-        }
-        return best && best.overlapRows >= MIN_SCROLL_OVERLAP ? { deltaRows: best.deltaRows, overlapRows: best.overlapRows, samples: next.slice(best.start, best.start + best.overlapRows).filter(Boolean).slice(0, 6) } : null;
-    }
-    scrollBoundaryRows(candidate, previous, previousTexts, next, nextTexts) {
-        const rows = new Set();
-        for (const boundary of [candidate.matchTopRow, candidate.matchBottomRow])
-            for (let row = boundary - 2; row <= boundary + 2; row += 1)
-                if (row >= 0 && row < next.length)
-                    rows.add(row);
-        return [...rows].sort((a, b) => a - b).map((newRow) => {
-            const oldRow = newRow + candidate.deltaRows;
-            const oldText = oldRow >= 0 && oldRow < previousTexts.length ? previousTexts[oldRow] : null;
-            const sameSignature = oldRow >= 0 && oldRow < previous.length && next[newRow] === previous[oldRow];
-            return { newRow, oldRow, newText: nextTexts[newRow], oldText, sameText: oldText === nextTexts[newRow], sameSignature };
-        });
-    }
-    rowSignature(line, cols, cell, contentOnly = false) {
+    rowSignature(line, cols, cell) {
         if (!line)
             return '';
         let signature = '';
@@ -929,8 +673,7 @@ export class TerminalRenderer {
             const chars = current.getChars();
             const attributes = CELL_ATTRIBUTES.map((attribute) => Number(cellAttribute(current, attribute))).join('');
             const colors = `${current.getFgColor()},${current.getBgColor()},${Number(current.isFgRGB())}${Number(current.isBgRGB())}${Number(current.isFgPalette())}${Number(current.isBgPalette())},${Number(current.isInverse())}`;
-            const presentation = contentOnly ? '' : `${colors}${Number(current.isDim())}${attributes}`;
-            signature += `${chars.length}:${chars},${current.getWidth()},${presentation}${Number(current.isInvisible())};`;
+            signature += `${chars.length}:${chars},${current.getWidth()},${colors}${Number(current.isDim())}${attributes}${Number(current.isInvisible())};`;
         }
         return signature;
     }
@@ -1002,57 +745,6 @@ export class TerminalRenderer {
             }
         }
     }
-    drawMock(time, settings) {
-        const ctx = this.sourceCanvas.getContext('2d');
-        if (!ctx)
-            return;
-        const { width, height } = this.sourceCanvas;
-        const size = settings.consoleFontSize;
-        const line = Math.floor(size * 1.5);
-        const profile = colorProfile(settings.colorProfile);
-        ctx.fillStyle = '#050806';
-        ctx.fillRect(0, 0, width, height);
-        ctx.font = canvasFont(size, settings.consoleFont, settings.fallbackFont);
-        ctx.textBaseline = 'top';
-        const lines = [
-            'SCANLINE TERM // CRT DISPLAY DIAGNOSTIC',
-            `virtual framebuffer ${width}×${height}`,
-            '[ OK ] phosphor matrix online',
-            '[ OK ] scanline generator synchronized',
-            '[ OK ] WebGL fragment pipeline ready',
-            '> rendering an ordinary terminal as an old monitor',
-            '> browser preview uses a mock session',
-            '',
-            `  frame ${Math.floor(time * 10) % 10000}  uptime ${(time % 3600).toFixed(1)}s`,
-        ];
-        lines.forEach((text, i) => {
-            ctx.fillStyle = ['#7dffae', '#4ecf83', '#9affbd', '#62db91', '#78c9ff', '#ffd166', '#ff8a80'][i % 7];
-            ctx.fillText(text, size, size + line * i);
-        });
-        const promptY = size + line * lines.length;
-        const promptText = 'ready> ';
-        ctx.fillStyle = '#7dffae';
-        ctx.fillText(promptText, size, promptY);
-        const cursorPhase = Math.floor(time * 2);
-        if (cursorPhase % 2 === 0) {
-            const cursorX = size + ctx.measureText(promptText).width;
-            const cursorW = ctx.measureText('M').width;
-            const cursorH = size;
-            const cursorStyle = settings.cursorStyle ?? 'block';
-            ctx.fillStyle = brightenColor(profile.cursor ?? '#7dffae', settings.cursorBrightness ?? 0);
-            if (cursorStyle === 'underline') {
-                const h = Math.max(2, Math.round(cursorH * 0.12));
-                ctx.fillRect(cursorX, promptY + cursorH - h - 1, cursorW, h);
-            }
-            else if (cursorStyle === 'bar') {
-                const w = Math.max(2, Math.min(cursorW, cursorW * 0.2));
-                ctx.fillRect(cursorX, promptY, w, cursorH);
-            }
-            else {
-                ctx.fillRect(cursorX, promptY + 1, cursorW, Math.max(1, cursorH - 2));
-            }
-        }
-    }
-    dispose() { this.cancelScroll(); this.disposables.forEach((item) => item.dispose()); this.disposables = []; this.terminal = null; this.rowSignatures = []; this.rowContentSignatures = []; this.rowTexts = []; this.snapshotCols = -1; this.snapshotRows = -1; this.snapshotViewportY = -1; this.snapshotBaseY = -1; this.snapshotBuffer = null; this.terminalOutputDirty = false; this.cursorRow = null; this.lastCursorPhase = -1; this.lastCursorMoveTime = 0; this.lastCursorX = -1; this.lastCursorY = -1; this.cursorMoved = false; }
+    dispose() { this.cancelScroll(); this.disposables.forEach((item) => item.dispose()); this.disposables = []; this.terminal = null; this.rowSignatures = []; this.snapshotBuffer = null; this.cursorRow = null; this.lastCursorPhase = -1; this.lastCursorMoveTime = 0; this.lastCursorX = -1; this.lastCursorY = -1; this.cursorMoved = false; }
 }
 //# sourceMappingURL=TerminalRenderer.js.map

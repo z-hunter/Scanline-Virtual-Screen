@@ -82,7 +82,7 @@ export interface CRTSettings {
   reflexBarHeight: number; // 0.05 to 0.6 (Vertical thickness / height)
   imperfectSignal: number; // 0.0 to 1.0 (Flicker, jitter and horizontal roll)
   humBar: number; // 0.0 to 1.0 (Travelling glowing hum bar)
-  channelSwitchEffect: boolean; // Brief vertical roll when changing terminal tabs
+  channelSwitchEffect: boolean; // Brief vertical roll when changing source/channel
   antiAliasedPixels: boolean; // Anti-Moiré sharp pixel filter (Bandlimited Box Integration)
   colorMode: CRTColorMode;
   maskType: CRTMaskType;
