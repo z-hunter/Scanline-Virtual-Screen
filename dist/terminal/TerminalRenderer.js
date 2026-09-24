@@ -597,10 +597,12 @@ export class TerminalRenderer {
     drawCursor(ctx, settings, profile, offset, cellSize, buffer, cursorRow) {
         if (!ctx || cursorRow === null)
             return;
+        const cursorStyle = settings.cursorStyle ?? this.terminal?.options.cursorStyle ?? 'block';
+        if (cursorStyle === 'block')
+            return;
         const x = offset.x + cellSize.width * buffer.cursorX;
         const y = offset.y + cellSize.height * buffer.cursorY;
         ctx.fillStyle = brightenColor(profile.cursor ?? profile.foreground, settings.cursorBrightness ?? 0);
-        const cursorStyle = settings.cursorStyle ?? this.terminal?.options.cursorStyle ?? 'block';
         if (cursorStyle === 'underline') {
             const underlineHeight = Math.max(2, Math.round(cellSize.height * 0.1));
             ctx.fillRect(x, y + Math.ceil(cellSize.height) - underlineHeight - 1, cellSize.width, underlineHeight);
@@ -725,8 +727,12 @@ export class TerminalRenderer {
                 ctx.fillRect(left, top, width, height);
                 fg = accessibleTextColor(fg, blendColor(bg, '#ffd05c', highlightAlpha));
             }
-            if (column === cursorColumn && cursorColor)
+            if (column === cursorColumn && cursorColor) {
+                ctx.globalAlpha = 1;
+                ctx.fillStyle = cursorColor;
+                ctx.fillRect(left, top + 1, cellSize.width, Math.max(1, height - 2));
                 fg = accessibleTextColor(fg, cursorColor);
+            }
             const chars = current.getChars();
             const invisible = current.isInvisible();
             const bold = cellAttribute(current, 'isBold');

@@ -25,6 +25,9 @@ describe('TerminalRenderer', () => {
     const terminal = { cols: 1, rows: 1, options: {}, buffer: { active: { viewportY: 0, baseY: 0, cursorX: 0, cursorY: 0, getNullCell: () => cell, getLine: () => ({ getCell: () => cell }) } }, onCursorMove: () => ({ dispose() {} }), onWriteParsed: () => ({ dispose() {} }), onScroll: () => ({ dispose() {} }) };
     const renderer = new TerminalRenderer(); renderer.resizeSource(80, 40); renderer.bindTerminal(terminal as never);
     renderer.draw(0, DEFAULT_CRT_SETTINGS);
+    const cursorCall = context.fillRect.mock.calls.findIndex((call) => call[2] === 8 && call[3] === 8);
+    expect(cursorCall).toBeGreaterThanOrEqual(0);
+    expect(context.fillRect.mock.invocationCallOrder[cursorCall]).toBeLessThan(context.fillText.mock.invocationCallOrder[0]);
     expect(context.fillText.mock.results.map((result) => result.value)).toContainEqual(['A', '#000000']);
   });
 
