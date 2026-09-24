@@ -89,6 +89,27 @@ describe('TerminalRenderer', () => {
     expect(context.drawImage).not.toHaveBeenCalled();
   });
 
+  it('snaps a saturated region backlog instead of retargeting past its clip', () => {
+    const context = { drawImage: vi.fn(), clearRect: vi.fn() };
+    vi.spyOn(performance, 'now').mockReturnValue(0);
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context as unknown as CanvasRenderingContext2D);
+    const alternate = {};
+    const terminal = {
+      rows: 6,
+      buffer: { active: alternate },
+      onCursorMove: () => ({ dispose() {} }),
+      onWriteParsed: () => ({ dispose() {} }),
+      onScroll: () => ({ dispose() {} }),
+    };
+    const renderer = new TerminalRenderer();
+    renderer.resizeSource(80, 120);
+    renderer.bindTerminal(terminal as never);
+
+    for (let count = 0; count < 5; count += 1) expect(renderer.beginRegionScroll({ deltaRows: 1, topRow: 0, bottomRow: 6 })).toBe(true);
+    expect(renderer.beginRegionScroll({ deltaRows: 1, topRow: 0, bottomRow: 6 })).toBe(false);
+    expect(renderer.isScrollAnimating).toBe(false);
+  });
+
   it('captures the current frame for an incompatible scroll direction', () => {
     const context = { drawImage: vi.fn(), clearRect: vi.fn() };
     vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context as unknown as CanvasRenderingContext2D);

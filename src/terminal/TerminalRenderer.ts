@@ -283,6 +283,10 @@ export class TerminalRenderer {
     const targetPosition = toPosition ?? (sameKind && existing ? (existing.toPosition ?? initialPosition) + deltaRows : initialPosition + deltaRows);
     let capturedVisual = false;
     if (existing && this.canRetargetScroll(existing, kind, targetPosition, topRow, bottomRow)) {
+      if (kind === 'region' && Math.abs(targetPosition - initialPosition) >= bottomRow - topRow) {
+        this.cancelScroll();
+        return false;
+      }
       this.retargetScroll(existing, targetPosition, topRow, bottomRow);
       return true;
     }
