@@ -1,8 +1,14 @@
 # Scanline Virtual Screen
 
-Scanline Virtual Screen (SVS) is a reusable browser-side display pipeline for a fixed virtual canvas. It composites overlays in virtual pixels and presents the frame through a CRT WebGL renderer or a Canvas 2D pass-through path.
+Scanline Virtual Screen (SVS) is a reusable browser-side display pipeline for a fixed virtual canvas with customized CRT emulation and xterm layer. SVS composites overlays in virtual pixels and presents the frame through a CRT WebGL renderer or a Canvas 2D pass-through path.
 
-It is the shared display module used by Scanline Term and Quest. SVS does not know about Tauri, ConPTY, tabs, storage, game state, or any particular UI shell.
+It is a **virtual display's screen**, capable of operating in text and graphics modes (or a combination of both) and featuring numerous FX settings that allow for a wide range of visual customizations — from a modern monitor to mimics an very old-fashioned CRT terminal.
+It is also a set of settings and UI controls that can be embedded into a host application to manage the virtual screen and switch between its presets.
+
+It is the shared component used by [Scanline Term](https://github.com/z-hunter/Scanline-Term) and [Scanline Engine](https://github.com/z-hunter/Quest).  
+
+<img width="1919" height="1079" alt="Screenshot_29" src="https://github.com/user-attachments/assets/eee7444c-75e4-440c-9347-f22bdbfc7c15" />
+
 
 ## License
 
