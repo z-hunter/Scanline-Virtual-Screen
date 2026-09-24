@@ -919,13 +919,35 @@ export class CRTFilter {
       precision mediump float;
       uniform sampler2D u_image;
       varying vec2 v_texCoord;
-      void main() {
+
+      float median4(float a, float b, float c, float d) {
+        float swap;
+        if (a > b) { swap = a; a = b; b = swap; }
+        if (c > d) { swap = c; c = d; d = swap; }
+        if (a > c) { swap = a; a = c; c = swap; }
+        if (b > d) { swap = b; b = d; d = swap; }
+        if (b > c) { swap = b; b = c; c = swap; }
+        return (b + c) * 0.5;
+      }
+
+      float lumaAt(vec2 uv) {
+        return dot(texture2D(u_image, uv).rgb, vec3(0.2126, 0.7152, 0.0722));
+      }
+
+      float blockAverage(float x, float y) {
         float total = 0.0;
-        for (int y = 0; y < 16; y++) for (int x = 0; x < 16; x++) {
-          vec3 color = texture2D(u_image, (vec2(float(x), float(y)) + 0.5) / 16.0).rgb;
-          total += dot(color, vec3(0.2126, 0.7152, 0.0722));
+        for (int row = 0; row < 4; row++) for (int column = 0; column < 4; column++) {
+          total += lumaAt(vec2(x, y) + (vec2(float(column), float(row)) + 0.5) / 16.0);
         }
-        gl_FragColor = vec4(vec3(total / 256.0), 1.0);
+        return total / 16.0;
+      }
+
+      float rowMedian(float y) {
+        return median4(blockAverage(0.0, y), blockAverage(0.25, y), blockAverage(0.5, y), blockAverage(0.75, y));
+      }
+
+      void main() {
+        gl_FragColor = vec4(vec3(median4(rowMedian(0.0), rowMedian(0.25), rowMedian(0.5), rowMedian(0.75))), 1.0);
       }
     `);
         const createLumaTarget = () => {
