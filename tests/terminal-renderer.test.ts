@@ -18,6 +18,16 @@ describe('TerminalRenderer', () => {
     expect(accessibleTextColor('#000000', '#ffd05c')).toBe('#000000');
   });
 
+  it('uses a readable foreground under a block cursor', () => {
+    const context = { fillStyle: '', globalAlpha: 1, font: '', textAlign: 'left', textBaseline: 'middle', fillRect: vi.fn(), fillText: vi.fn(function (this: { fillStyle: string }, text: string) { return [text, this.fillStyle]; }), measureText: () => ({ width: 8, fontBoundingBoxAscent: 8, fontBoundingBoxDescent: 2 }) };
+    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context as unknown as CanvasRenderingContext2D);
+    const cell = { getChars: () => 'A', getWidth: () => 1, getFgColor: () => 0, getBgColor: () => 0, isFgRGB: () => false, isBgRGB: () => false, isFgPalette: () => false, isBgPalette: () => false, isInverse: () => false, isDim: () => false, isInvisible: () => false };
+    const terminal = { cols: 1, rows: 1, options: {}, buffer: { active: { viewportY: 0, baseY: 0, cursorX: 0, cursorY: 0, getNullCell: () => cell, getLine: () => ({ getCell: () => cell }) } }, onCursorMove: () => ({ dispose() {} }), onWriteParsed: () => ({ dispose() {} }), onScroll: () => ({ dispose() {} }) };
+    const renderer = new TerminalRenderer(); renderer.resizeSource(80, 40); renderer.bindTerminal(terminal as never);
+    renderer.draw(0, DEFAULT_CRT_SETTINGS);
+    expect(context.fillText.mock.results.map((result) => result.value)).toContainEqual(['A', '#000000']);
+  });
+
   it('forwards xterm scroll events to the bound callback', () => {
     let scrolled: (viewportY: number) => void = () => {};
     const terminal = {

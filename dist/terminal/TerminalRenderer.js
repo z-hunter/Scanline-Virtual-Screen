@@ -560,8 +560,10 @@ export class TerminalRenderer {
         ctx.font = baseFont;
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
+        const cursorStyle = settings.cursorStyle ?? terminal.options.cursorStyle ?? 'block';
+        const cursorColor = cursorStyle === 'block' ? brightenColor(profile.cursor ?? profile.foreground, settings.cursorBrightness ?? 0) : null;
         for (const row of changedRows)
-            this.drawRow(ctx, buffer.getLine(buffer.viewportY + row), row, terminal.cols, buffer.viewportY, cell, profile, offset, cellSize, baseFont);
+            this.drawRow(ctx, buffer.getLine(buffer.viewportY + row), row, terminal.cols, buffer.viewportY, cell, profile, offset, cellSize, baseFont, row === nextCursorRow ? cursorColor : null, buffer.cursorX);
         if (nextSignatures.length) {
             this.sourceLuma = terminalAverageLuma(terminal, profile, { width: source.width, height: source.height, cellWidth: cellSize.width, cellHeight: cellSize.height, padding: terminalPadding(source.width, source.height) });
             this.hasMeasuredSourceLuma = true;
@@ -681,7 +683,7 @@ export class TerminalRenderer {
         }
         return signature;
     }
-    drawRow(ctx, line, row, cols, viewportY, cell, profile, offset, cellSize, baseFont) {
+    drawRow(ctx, line, row, cols, viewportY, cell, profile, offset, cellSize, baseFont, cursorColor, cursorColumn) {
         const y = offset.y + cellSize.height * (row + .5);
         ctx.globalAlpha = 1;
         ctx.fillStyle = profile.background;
@@ -723,6 +725,8 @@ export class TerminalRenderer {
                 ctx.fillRect(left, top, width, height);
                 fg = accessibleTextColor(fg, blendColor(bg, '#ffd05c', highlightAlpha));
             }
+            if (column === cursorColumn && cursorColor)
+                fg = accessibleTextColor(fg, cursorColor);
             const chars = current.getChars();
             const invisible = current.isInvisible();
             const bold = cellAttribute(current, 'isBold');
