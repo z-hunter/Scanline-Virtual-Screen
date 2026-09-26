@@ -14,7 +14,7 @@ host source canvas + runtime overlays
   VirtualScreenRenderer facade
        │                  │
        ▼                  ▼
-  CRTFilter (WebGL)   Canvas 2D pass-through
+CRTFilter (WebGL)   Canvas 2D pass-through
        │                  │
        └──── output HTMLCanvasElement ────┘
 ```
@@ -55,6 +55,8 @@ The compositor copies the source canvas first, then draws overlays in stable asc
 ## Rendering lifecycle
 
 `VirtualScreenRenderer` owns its compositor and, when enabled, its `CRTFilter`. Call `render()` from the host's frame loop and call `dispose()` when the output canvas is discarded, a tab closes, or the host replaces the WebGL context. Resize the host canvases before the next render and call `clearPersistence()` when a resize invalidates phosphor history.
+
+In the WebGL path, source sampling and output reconstruction are separate controls. `pixelSmoothing` selects the source texture's `NEAREST` or `LINEAR` sampling. `antiAliasedPixels` enables a bounded adaptive resolve for source boundaries and high-frequency CRT scanline/mask patterns; it is also used by pass-through rendering. The resolve uses derivative-based footprint detection and a four-tap rotated grid without adding a framebuffer pass. When disabled, rendering uses the raw single-sample path. Canvas 2D fallback cannot reproduce this output-space resolve.
 
 The facade is deliberately not a scheduler: it does not own `requestAnimationFrame`, `ResizeObserver`, tabs, or error UI.
 

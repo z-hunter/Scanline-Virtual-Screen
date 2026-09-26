@@ -2,6 +2,8 @@
 
 Scanline Virtual Screen (SVS) is a reusable browser-side display pipeline for a fixed virtual canvas with customized CRT emulation and xterm layer. SVS composites overlays in virtual pixels and presents the frame through a CRT WebGL renderer or a Canvas 2D pass-through path.
 
+`pixelSmoothing` controls only the source texture sampler (`NEAREST`/`LINEAR`). `antiAliasedPixels` is an independent WebGL output resolve: it stabilizes source-pixel edges and CRT raster patterns when virtual and physical pixels do not align. It applies with CRT enabled or disabled; Canvas 2D fallback supports source smoothing only.
+
 It is a **virtual display's screen**, capable of operating in text and graphics modes (or a combination of both) and featuring numerous FX settings that allow for a wide range of visual customizations — from a modern monitor to mimics an very old-fashioned CRT terminal.
 It is also a set of settings and UI controls that can be embedded into a host application to manage the virtual screen and switch between its presets.
 

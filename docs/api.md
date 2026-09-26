@@ -70,7 +70,7 @@ Exported helpers include `terminalDimensions`, `fontCellSize`, `canvasFont`, ter
 
 All React sections are controlled. They receive current host state and emit whole updated values; they do not access storage or create a renderer.
 
-- `DisplaySettingsSection({ value, modes, onChange })` — virtual mode, anti-moiré pixels, and pixel smoothing.
+- `DisplaySettingsSection({ value, modes, onChange })` — virtual mode, independent anti-moiré output resolve, and source pixel smoothing.
 - `TerminalSettingsSection({ value, fonts, onChange, smoothScrolling? })` — ANSI profile, font, cell metrics, cursor, and optional host-owned scroll controls.
 - `AdvancedCRTSettingsSection({ value, onChange })` — the complete CRT panel; `CRTSettingsSection` remains its compatibility alias.
 - `PresetSettingsSection({ value, names, disabled?, onNameChange, onLoad, onSave })`

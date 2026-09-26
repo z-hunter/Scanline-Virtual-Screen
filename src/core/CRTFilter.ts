@@ -10,7 +10,11 @@ const PASSTHROUGH_FS = `
   #ifdef GL_OES_standard_derivatives
   #extension GL_OES_standard_derivatives : enable
   #endif
+  #ifdef GL_FRAGMENT_PRECISION_HIGH
+  precision highp float;
+  #else
   precision mediump float;
+  #endif
   uniform sampler2D u_image;
   uniform vec2 u_resolution;
   uniform vec2 u_sourceResolution;
@@ -19,20 +23,33 @@ const PASSTHROUGH_FS = `
   uniform float u_imageContrast;
   varying vec2 v_texCoord;
 
-  vec2 sampleUV(vec2 uv) {
-    vec2 p = uv * u_sourceResolution;
-    if (u_antiAliasedPixels <= 0.5) return uv;
+  vec3 sampleSource(vec2 uv) {
+    vec3 center = texture2D(u_image, uv).rgb;
+    if (u_antiAliasedPixels <= 0.5) return center;
+    vec2 footprint = max(u_sourceResolution / u_resolution, vec2(0.0001));
     #ifdef GL_OES_standard_derivatives
-    vec2 w = max(fwidth(p), vec2(0.0001));
-    #else
-    vec2 w = max(u_sourceResolution / u_resolution, vec2(0.0001));
+    footprint = max(fwidth(uv * u_sourceResolution), vec2(0.0001));
     #endif
-    vec2 pSmooth = floor(p - 0.5) + 0.5 + clamp((fract(p - 0.5) - 0.5 + 0.5 * w) / w, 0.0, 1.0);
-    return pSmooth / u_sourceResolution;
+    vec2 p = uv * u_sourceResolution;
+    vec2 edgeDistance = min(fract(p), 1.0 - fract(p));
+    float boundaryRisk = max(step(edgeDistance.x, footprint.x * 0.5), step(edgeDistance.y, footprint.y * 0.5));
+    if (boundaryRisk <= 0.0) return center;
+    #ifdef GL_OES_standard_derivatives
+    vec2 dx = dFdx(uv);
+    vec2 dy = dFdy(uv);
+    #else
+    vec2 dx = vec2(1.0 / u_resolution.x, 0.0);
+    vec2 dy = vec2(0.0, 1.0 / u_resolution.y);
+    #endif
+    vec3 resolved = texture2D(u_image, uv + dx * -0.375 + dy * -0.125).rgb;
+    resolved += texture2D(u_image, uv + dx * 0.125 + dy * -0.375).rgb;
+    resolved += texture2D(u_image, uv + dx * 0.375 + dy * 0.125).rgb;
+    resolved += texture2D(u_image, uv + dx * -0.125 + dy * 0.375).rgb;
+    return mix(center, resolved * 0.25, boundaryRisk);
   }
 
   void main() {
-    vec3 color = texture2D(u_image, sampleUV(v_texCoord)).rgb;
+    vec3 color = sampleSource(v_texCoord);
     color = (color - 0.5) * u_imageContrast + 0.5;
     gl_FragColor = vec4(clamp(color * u_imageBrightness, 0.0, 1.0), 1.0);
   }
@@ -102,7 +119,7 @@ export interface CRTSettings {
   imperfectSignal: number; // 0.0 to 1.0 (Flicker, jitter and horizontal roll)
   humBar: number; // 0.0 to 1.0 (Travelling glowing hum bar)
   channelSwitchEffect: boolean; // Brief vertical roll when changing source/channel
-  antiAliasedPixels: boolean; // Anti-Moiré sharp pixel filter (Bandlimited Box Integration)
+  antiAliasedPixels: boolean; // Independent output-space anti-moiré resolve
   pixelSmoothing: boolean; // Linear filtering of source pixels
   colorMode: CRTColorMode;
   maskType: CRTMaskType;
@@ -505,7 +522,11 @@ export class CRTFilter {
             #ifdef GL_OES_standard_derivatives
             #extension GL_OES_standard_derivatives : enable
             #endif
+            #ifdef GL_FRAGMENT_PRECISION_HIGH
+            precision highp float;
+            #else
             precision mediump float;
+            #endif
             #define ENABLE_TRAIL 0
             #define ENABLE_BLOOM 0
             #define ENABLE_GLOW 0
@@ -588,33 +609,36 @@ export class CRTFilter {
                 return uv_t;
             }
 
-             // Anti-Moiré Sharp Pixel Reconstruction (Continuous Bandlimited Area Integration)
-             vec2 getSmoothUV(vec2 uv) {
-                 if (u_antiAliasedPixels <= 0.5) {
-                     // Standard Nearest-Neighbor discrete stepping
-                     vec2 p = uv * u_sourceResolution;
-                     return uv;
-                 }
-                 
-                 vec2 p = uv * u_sourceResolution;
-                 #ifdef GL_OES_standard_derivatives
-                 vec2 w = max(fwidth(p), vec2(0.0001));
-                 #else
-                 vec2 w = max(u_sourceResolution / u_resolution, vec2(0.0001));
-                 #endif
-                 
-                 // Analytical integral of a box filter: flat 100% sharp inside pixel center,
-                 // smooth continuous 1-physical-pixel anti-aliased blend exactly at pixel boundaries
-                 vec2 p_smooth = floor(p - 0.5) + 0.5 + clamp((fract(p - 0.5) - 0.5 + 0.5 * w) / w, 0.0, 1.0);
-                 return p_smooth / u_sourceResolution;
-             }
-
              // Helper to prevent texture wrapping/clamping artifacts
              vec3 sampleScreen(vec2 uv) {
-                 vec2 smoothUV = getSmoothUV(uv);
-                 vec3 color = texture2D(u_image, smoothUV).rgb;
+                 vec3 color = texture2D(u_image, uv).rgb;
                  float inBounds = step(0.0, uv.x) * step(uv.x, 1.0) * step(0.0, uv.y) * step(uv.y, 1.0);
                  return color * inBounds;
+             }
+
+             vec3 sampleResolvedScreen(vec2 uv) {
+                 vec3 center = sampleScreen(uv);
+                 if (u_antiAliasedPixels <= 0.5) return center;
+                 vec2 footprint = max(u_sourceResolution / u_resolution, vec2(0.0001));
+                 #ifdef GL_OES_standard_derivatives
+                 footprint = max(fwidth(uv * u_sourceResolution), vec2(0.0001));
+                 #endif
+                 vec2 p = uv * u_sourceResolution;
+                 vec2 edgeDistance = min(fract(p), 1.0 - fract(p));
+                 float boundaryRisk = max(step(edgeDistance.x, footprint.x * 0.5), step(edgeDistance.y, footprint.y * 0.5));
+                 if (boundaryRisk <= 0.0) return center;
+                 #ifdef GL_OES_standard_derivatives
+                 vec2 dx = dFdx(uv);
+                 vec2 dy = dFdy(uv);
+                 #else
+                 vec2 dx = vec2(1.0 / u_resolution.x, 0.0);
+                 vec2 dy = vec2(0.0, 1.0 / u_resolution.y);
+                 #endif
+                 vec3 resolved = sampleScreen(uv + dx * -0.375 + dy * -0.125);
+                 resolved += sampleScreen(uv + dx * 0.125 + dy * -0.375);
+                 resolved += sampleScreen(uv + dx * 0.375 + dy * 0.125);
+                 resolved += sampleScreen(uv + dx * -0.125 + dy * 0.375);
+                 return mix(center, resolved * 0.25, boundaryRisk);
              }
 
              vec3 applyColorMode(vec3 value) {
@@ -643,9 +667,9 @@ export class CRTFilter {
                  return mask;
              }
 
-             vec3 colorMask() {
+             vec3 colorMaskAt(vec2 fragCoord) {
                   // ponytail: procedural mask is the fast WebGL 1 baseline; add LUT resampling only if visual comparison demands it.
-                  vec2 pixelPos = gl_FragCoord.xy / max(u_maskScale, 1.0);
+                  vec2 pixelPos = fragCoord / max(u_maskScale, 1.0);
                   vec2 pos = floor(pixelPos);
                   vec3 mask = hardRgbMask(pixelPos.x);
 
@@ -675,6 +699,16 @@ export class CRTFilter {
                   // Hard masks average to 5/6; the soft aperture profile already averages to 1.
                   float normalization = u_maskType < 1.5 ? 1.0 : 1.2;
                   return mix(vec3(1.0), mask * normalization, clamp(u_maskStrength, 0.0, 1.0));
+             }
+
+             vec3 colorMask() {
+                  vec3 center = colorMaskAt(gl_FragCoord.xy);
+                  if (u_antiAliasedPixels <= 0.5) return center;
+                  vec3 resolved = colorMaskAt(gl_FragCoord.xy + vec2(-0.375, -0.125));
+                  resolved += colorMaskAt(gl_FragCoord.xy + vec2(0.125, -0.375));
+                  resolved += colorMaskAt(gl_FragCoord.xy + vec2(0.375, 0.125));
+                  resolved += colorMaskAt(gl_FragCoord.xy + vec2(-0.125, 0.375));
+                  return resolved * 0.25;
              }
 
              void main() {
@@ -825,9 +859,9 @@ export class CRTFilter {
                 vec2 profile = sign(edge) * pow(abs(edge), vec2(u_aberrationFalloff));
                 vec2 delta = profile * (0.5 * u_aberration * colorEnabled) / u_resolution;
 
-                float r = sampleScreen(rasterUV - delta).r;
-                float g = sampleScreen(rasterUV).g;
-                float b = sampleScreen(rasterUV + delta).b;
+                float r = sampleResolvedScreen(rasterUV - delta).r;
+                float g = sampleResolvedScreen(rasterUV).g;
+                float b = sampleResolvedScreen(rasterUV + delta).b;
 
                 vec3 imageColor = vec3(r, g, b);
 
@@ -899,34 +933,30 @@ export class CRTFilter {
 
                 float scanline = 1.0;
 
-                // Scanlines (Analytic Sinc-Integrated Fourier Beam with Timothy Lottes Phase Jitter)
+                // Scanlines. Anti-moiré enables footprint integration and phase jitter;
+                // disabling it restores the raw single-sample beam.
                 if (u_scanlineCount > 0.0 && u_scanlineIntensity > 0.0) {
                     float pos = rasterUV.y * u_scanlineCount;
+                    float beam = 0.5 + 0.5 * cos(6.28318530718 * pos);
+                    if (u_antiAliasedPixels > 0.5) {
+                        // Screen-space pixel footprint in scanline units.
+                        #ifdef GL_OES_standard_derivatives
+                        float w = max(length(vec2(dFdx(pos), dFdy(pos))), 0.0001);
+                        #else
+                        float w = max(u_scanlineCount / u_resolution.y, 0.0001);
+                        #endif
 
-                    // 1. Screen-space pixel footprint in scanline units
-                    #ifdef GL_OES_standard_derivatives
-                    float w = max(length(vec2(dFdx(pos), dFdy(pos))), 0.0001);
-                    #else
-                    float w = max(u_scanlineCount / u_resolution.y, 0.0001);
-                    #endif
-
-                    // 2. Timothy Lottes Phase Jitter: decorrelates discrete phase beats
-                    vec3 magic = vec3(0.06711056, 0.00583715, 52.9829189);
-                    float dither = fract(magic.z * fract(dot(v_texCoord * u_resolution, magic.xy))) - 0.5;
-                    float jPos = pos + dither * min(w * 0.4, 0.15);
-
-                    // 3. Analytic Area Integration (Sinc-filtered harmonics over the pixel interval):
-                    // Eliminates non-integer scaling stepping (3-4-3-4 px alternating thickness)
-                    float angle = 6.28318530718 * jPos;
-                    float piW = 3.14159265359 * w;
-                    float sinc1 = sin(piW) / piW;
-                    float sinc2 = sin(2.0 * piW) / (2.0 * piW);
-
-                    // 1st harmonic shapes the fundamental valley, 2nd harmonic sharpens the electron beam peak
-                    float harmonics = 0.75 * sinc1 * cos(angle) + 0.25 * sinc2 * cos(2.0 * angle);
-
-                    // Map harmonics [-0.5, 1.0] to normalized beam intensity [0.0, 1.0]
-                    float beam = clamp(0.6666667 * harmonics + 0.3333333, 0.0, 1.0);
+                        // Timothy Lottes phase jitter decorrelates discrete phase beats.
+                        vec3 magic = vec3(0.06711056, 0.00583715, 52.9829189);
+                        float dither = fract(magic.z * fract(dot(v_texCoord * u_resolution, magic.xy))) - 0.5;
+                        float jPos = pos + dither * min(w * 0.4, 0.15);
+                        float angle = 6.28318530718 * jPos;
+                        float piW = 3.14159265359 * w;
+                        float sinc1 = sin(piW) / piW;
+                        float sinc2 = sin(2.0 * piW) / (2.0 * piW);
+                        float harmonics = 0.75 * sinc1 * cos(angle) + 0.25 * sinc2 * cos(2.0 * angle);
+                        beam = clamp(0.6666667 * harmonics + 0.3333333, 0.0, 1.0);
+                    }
 
                     // 4. Beam Spot Modulation (Dynamic electron beam widening on bright pixels)
                     float luma = dot(imageColor, vec3(0.2126, 0.7152, 0.0722));
