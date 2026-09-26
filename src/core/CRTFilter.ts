@@ -7,13 +7,32 @@ export type BezelGlowMode = 'spill' | 'reflection';
 export type CursorStyle = 'block' | 'underline' | 'bar';
 
 const PASSTHROUGH_FS = `
+  #ifdef GL_OES_standard_derivatives
+  #extension GL_OES_standard_derivatives : enable
+  #endif
   precision mediump float;
   uniform sampler2D u_image;
+  uniform vec2 u_resolution;
+  uniform vec2 u_sourceResolution;
+  uniform float u_antiAliasedPixels;
   uniform float u_imageBrightness;
   uniform float u_imageContrast;
   varying vec2 v_texCoord;
+
+  vec2 sampleUV(vec2 uv) {
+    vec2 p = uv * u_sourceResolution;
+    if (u_antiAliasedPixels <= 0.5) return (floor(p) + 0.5) / u_sourceResolution;
+    #ifdef GL_OES_standard_derivatives
+    vec2 w = max(fwidth(p), vec2(0.0001));
+    #else
+    vec2 w = max(u_sourceResolution / u_resolution, vec2(0.0001));
+    #endif
+    vec2 pSmooth = floor(p - 0.5) + 0.5 + clamp((fract(p - 0.5) - 0.5 + 0.5 * w) / w, 0.0, 1.0);
+    return pSmooth / u_sourceResolution;
+  }
+
   void main() {
-    vec3 color = texture2D(u_image, v_texCoord).rgb;
+    vec3 color = texture2D(u_image, sampleUV(v_texCoord)).rgb;
     color = (color - 0.5) * u_imageContrast + 0.5;
     gl_FragColor = vec4(clamp(color * u_imageBrightness, 0.0, 1.0), 1.0);
   }
@@ -442,7 +461,7 @@ export class CRTFilter {
     }
   }
 
-  private drawPassthrough(settings: CRTSettings): void {
+  private drawPassthrough(settings: CRTSettings, sourceWidth: number, sourceHeight: number): void {
     if (!this.gl || !this.program || !this.buffer || !this.texture) return;
     const gl = this.gl;
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -456,6 +475,10 @@ export class CRTFilter {
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.texture);
     if (this.imageLocation) gl.uniform1i(this.imageLocation, 0);
+    if (this.resolutionLocation) gl.uniform2f(this.resolutionLocation, this.canvas.width, this.canvas.height);
+    if (this.sourceResolutionLocation) gl.uniform2f(this.sourceResolutionLocation, sourceWidth, sourceHeight);
+    if (this.antiAliasedPixelsLocation)
+      gl.uniform1f(this.antiAliasedPixelsLocation, settings.antiAliasedPixels !== false ? 1.0 : 0.0);
     if (this.imageBrightnessLocation) gl.uniform1f(this.imageBrightnessLocation, settings.imageBrightness);
     if (this.imageContrastLocation) gl.uniform1f(this.imageContrastLocation, settings.imageContrast);
     gl.drawArrays(gl.TRIANGLES, 0, 6);
@@ -1433,13 +1456,13 @@ export class CRTFilter {
       }
     }
 
-    this.setSourceSampling(settings.pixelSmoothing !== false);
+    this.setSourceSampling(settings.pixelSmoothing !== false || settings.antiAliasedPixels !== false);
 
     if (!settings.crtEmulation) {
       if (this.persistenceActive) this.clearPersistence();
       this.persistenceActive = false;
       this.selectCRTProgram(-1);
-      this.drawPassthrough(settings);
+      this.drawPassthrough(settings, sourceCanvas.width, sourceCanvas.height);
       return;
     }
 
@@ -1620,7 +1643,7 @@ export class CRTFilter {
     if (this.sourceResolutionLocation)
       gl.uniform2f(this.sourceResolutionLocation, sourceCanvas.width, sourceCanvas.height);
     if (this.antiAliasedPixelsLocation)
-      gl.uniform1f(this.antiAliasedPixelsLocation, settings.antiAliasedPixels !== false && settings.pixelSmoothing !== false ? 1.0 : 0.0);
+      gl.uniform1f(this.antiAliasedPixelsLocation, settings.antiAliasedPixels !== false ? 1.0 : 0.0);
         if (this.colorModeLocation) {
       const colorMode = { color: 0, bw: 1, green: 2, 'green-p39': 3, amber: 4, blue: 5 }[settings.colorMode] ?? 0;
       gl.uniform1f(this.colorModeLocation, colorMode);
