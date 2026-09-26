@@ -21,7 +21,7 @@ const PASSTHROUGH_FS = `
 
   vec2 sampleUV(vec2 uv) {
     vec2 p = uv * u_sourceResolution;
-    if (u_antiAliasedPixels <= 0.5) return (floor(p) + 0.5) / u_sourceResolution;
+    if (u_antiAliasedPixels <= 0.5) return uv;
     #ifdef GL_OES_standard_derivatives
     vec2 w = max(fwidth(p), vec2(0.0001));
     #else
@@ -593,7 +593,7 @@ export class CRTFilter {
                  if (u_antiAliasedPixels <= 0.5) {
                      // Standard Nearest-Neighbor discrete stepping
                      vec2 p = uv * u_sourceResolution;
-                     return (floor(p) + 0.5) / u_sourceResolution;
+                     return uv;
                  }
                  
                  vec2 p = uv * u_sourceResolution;
