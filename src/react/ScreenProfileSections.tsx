@@ -13,7 +13,6 @@ type NumericKey = Exclude<
   | 'bezelGlowMode'
   | 'showBezel'
   | 'antiAliasedPixels'
-  | 'passThroughSmoothing'
   | 'channelSwitchEffect'
   | 'reflexBarEnabled'
   | 'colorMode'
@@ -68,7 +67,6 @@ export function DisplaySettingsSection({ value, modes, onChange }: ProfileSectio
       <legend>Display</legend>
       {modes.length > 1 && <label className="svs-field resolution-control">Virtual resolution<select value={value.virtualScreen.modeId} onChange={(event) => onChange({ ...value, virtualScreen: { modeId: event.target.value } })}>{modes.map((mode) => <option key={mode.id} value={mode.id}>{mode.label ?? mode.id}</option>)}</select></label>}
       <Switch label="Anti-moiré pixels" checked={value.crt.antiAliasedPixels} onChange={(antiAliasedPixels) => update({ antiAliasedPixels })} />
-      <Switch label="Smooth pixels without CRT" checked={value.crt.passThroughSmoothing} onChange={(passThroughSmoothing) => update({ passThroughSmoothing })} />
     </fieldset>
   );
 }

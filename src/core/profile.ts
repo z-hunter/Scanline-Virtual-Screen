@@ -106,7 +106,7 @@ function normalizeRenderSettings(source: Record<string, unknown>, fallback: Rend
       : numberValue(source[key], current as number, min, max);
     (result as Record<string, unknown>)[key] = value;
   }
-  for (const key of ['bezelGlow', 'showBezel', 'reflexBarEnabled', 'channelSwitchEffect', 'antiAliasedPixels', 'passThroughSmoothing'] as const) {
+  for (const key of ['bezelGlow', 'showBezel', 'reflexBarEnabled', 'channelSwitchEffect', 'antiAliasedPixels'] as const) {
     if (typeof source[key] === 'boolean') result[key] = source[key];
   }
   if (source.bezelGlowMode === 'spill' || source.bezelGlowMode === 'reflection') result.bezelGlowMode = source.bezelGlowMode;
