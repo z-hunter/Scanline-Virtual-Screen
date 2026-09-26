@@ -17,7 +17,7 @@ export class VirtualScreenRenderer {
             const ctx = this.output.getContext('2d');
             if (!ctx)
                 return;
-            ctx.imageSmoothingEnabled = settings.antiAliasedPixels !== false;
+            ctx.imageSmoothingEnabled = settings.passThroughSmoothing !== false;
             ctx.drawImage(this.compositor.canvas, 0, 0, this.output.width, this.output.height);
         }
     }

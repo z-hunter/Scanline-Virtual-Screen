@@ -31,9 +31,11 @@ describe('controlled display section', () => {
     let next = profile;
     let smooth = false;
     act(() => root.render(<><DisplaySettingsSection value={profile} modes={[{ id: 'a' }, { id: 'b' }]} onChange={(value) => { next = value; }} /><TerminalSettingsSection value={profile} fonts={['Consolas']} onChange={(value) => { next = value; }} smoothScrolling={{ enabled: false, tuiEnabled: true, onEnabledChange: (value) => { smooth = value; }, onTuiEnabledChange: () => undefined }} /><AdvancedCRTSettingsSection value={profile} onChange={(value) => { next = value; }} /></>));
-    const antiMoire = element.querySelector('.display-section input[type="checkbox"]') as HTMLInputElement;
+    const [antiMoire, passThroughSmoothing] = Array.from(element.querySelectorAll('.display-section input[type="checkbox"]')) as HTMLInputElement[];
     act(() => antiMoire.click());
     expect(next.crt.antiAliasedPixels).toBe(!profile.crt.antiAliasedPixels);
+    act(() => passThroughSmoothing.click());
+    expect(next.crt.passThroughSmoothing).toBe(!profile.crt.passThroughSmoothing);
     const smoothToggle = Array.from(element.querySelectorAll('.terminal-section input[type="checkbox"]')).at(0) as HTMLInputElement;
     act(() => smoothToggle.click());
     expect(smooth).toBe(true);

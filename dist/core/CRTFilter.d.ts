@@ -53,6 +53,7 @@ export interface CRTSettings {
     humBar: number;
     channelSwitchEffect: boolean;
     antiAliasedPixels: boolean;
+    passThroughSmoothing: boolean;
     colorMode: CRTColorMode;
     maskType: CRTMaskType;
     maskStrength: number;
