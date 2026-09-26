@@ -29,15 +29,15 @@ const PASSTHROUGH_FS = `
     vec2 footprint = max(u_sourceResolution / u_resolution, vec2(0.0001));
     #ifdef GL_OES_standard_derivatives
     footprint = max(fwidth(uv * u_sourceResolution), vec2(0.0001));
+    // Derivatives must stay before any per-fragment branch; otherwise WebGL
+    // leaves them undefined and every resolve tap can collapse to the center.
+    vec2 dx = dFdx(uv);
+    vec2 dy = dFdy(uv);
     #endif
     vec2 p = uv * u_sourceResolution;
     vec2 edgeDistance = min(fract(p), 1.0 - fract(p));
     float boundaryRisk = max(step(edgeDistance.x, footprint.x * 0.5), step(edgeDistance.y, footprint.y * 0.5));
-    if (boundaryRisk <= 0.0) return center;
-    #ifdef GL_OES_standard_derivatives
-    vec2 dx = dFdx(uv);
-    vec2 dy = dFdy(uv);
-    #else
+    #ifndef GL_OES_standard_derivatives
     vec2 dx = vec2(1.0 / u_resolution.x, 0.0);
     vec2 dy = vec2(0.0, 1.0 / u_resolution.y);
     #endif
@@ -622,15 +622,14 @@ export class CRTFilter {
                  vec2 footprint = max(u_sourceResolution / u_resolution, vec2(0.0001));
                  #ifdef GL_OES_standard_derivatives
                  footprint = max(fwidth(uv * u_sourceResolution), vec2(0.0001));
+                 // Keep derivatives outside per-fragment control flow.
+                 vec2 dx = dFdx(uv);
+                 vec2 dy = dFdy(uv);
                  #endif
                  vec2 p = uv * u_sourceResolution;
                  vec2 edgeDistance = min(fract(p), 1.0 - fract(p));
                  float boundaryRisk = max(step(edgeDistance.x, footprint.x * 0.5), step(edgeDistance.y, footprint.y * 0.5));
-                 if (boundaryRisk <= 0.0) return center;
-                 #ifdef GL_OES_standard_derivatives
-                 vec2 dx = dFdx(uv);
-                 vec2 dy = dFdy(uv);
-                 #else
+                 #ifndef GL_OES_standard_derivatives
                  vec2 dx = vec2(1.0 / u_resolution.x, 0.0);
                  vec2 dy = vec2(0.0, 1.0 / u_resolution.y);
                  #endif
