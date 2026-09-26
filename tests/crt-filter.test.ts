@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { breathingExpansion, channelSwitchProgress, crtEffectMask, persistenceDecay, phosphorMaskScale } from '../src/core/CRTFilter.js';
+import { breathingExpansion, channelSwitchProgress, CRTFilter, crtEffectMask, persistenceDecay, phosphorMaskScale } from '../src/core/CRTFilter.js';
 import { DEFAULT_CRT_SETTINGS } from '../src/core/defaults.js';
 
 describe('CRT helpers', () => {
@@ -76,5 +76,27 @@ describe('CRT helpers', () => {
     expect(phosphorMaskScale(5760)).toBe(3);
     expect(phosphorMaskScale(1)).toBe(1);
     expect(phosphorMaskScale(9999)).toBe(3);
+  });
+
+  it('uses nearest sampling in WebGL pass-through when anti-moiré is disabled', () => {
+    const calls: number[] = [];
+    const gl = {
+      FRAMEBUFFER: 0, ARRAY_BUFFER: 1, FLOAT: 2, TEXTURE0: 3, TEXTURE_2D: 4,
+      TEXTURE_MIN_FILTER: 5, TEXTURE_MAG_FILTER: 6, NEAREST: 7, LINEAR: 8, TRIANGLES: 9,
+      bindFramebuffer: () => undefined, viewport: () => undefined, useProgram: () => undefined,
+      enableVertexAttribArray: () => undefined, bindBuffer: () => undefined,
+      vertexAttribPointer: () => undefined, activeTexture: () => undefined, bindTexture: () => undefined,
+      texParameteri: (_target: number, _pname: number, value: number) => calls.push(value),
+      uniform1i: () => undefined, uniform1f: () => undefined, drawArrays: () => undefined,
+    } as unknown as WebGLRenderingContext;
+    const filter = Object.assign(Object.create(CRTFilter.prototype), {
+      gl, program: {}, buffer: {}, texture: {}, canvas: { width: 1, height: 1 },
+      positionLocation: 0, texCoordLocation: 0, imageLocation: null,
+      imageBrightnessLocation: null, imageContrastLocation: null,
+    }) as CRTFilter;
+
+    (filter as any).drawPassthrough({ ...DEFAULT_CRT_SETTINGS, antiAliasedPixels: false });
+
+    expect(calls).toEqual([gl.NEAREST, gl.NEAREST]);
   });
 });

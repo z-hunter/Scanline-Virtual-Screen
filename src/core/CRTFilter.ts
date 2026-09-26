@@ -442,6 +442,9 @@ export class CRTFilter {
     gl.vertexAttribPointer(this.texCoordLocation, 2, gl.FLOAT, false, 16, 8);
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, this.texture);
+    const sampling = settings.antiAliasedPixels !== false ? gl.LINEAR : gl.NEAREST;
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, sampling);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, sampling);
     if (this.imageLocation) gl.uniform1i(this.imageLocation, 0);
     if (this.imageBrightnessLocation) gl.uniform1f(this.imageBrightnessLocation, settings.imageBrightness);
     if (this.imageContrastLocation) gl.uniform1f(this.imageContrastLocation, settings.imageContrast);
