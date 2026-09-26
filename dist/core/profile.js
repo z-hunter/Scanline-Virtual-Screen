@@ -63,7 +63,7 @@ function normalizeRenderSettings(source, fallback) {
             : numberValue(source[key], current, min, max);
         result[key] = value;
     }
-    for (const key of ['bezelGlow', 'showBezel', 'reflexBarEnabled', 'channelSwitchEffect', 'antiAliasedPixels']) {
+    for (const key of ['bezelGlow', 'showBezel', 'reflexBarEnabled', 'channelSwitchEffect', 'antiAliasedPixels', 'passThroughSmoothing']) {
         if (typeof source[key] === 'boolean')
             result[key] = source[key];
     }

@@ -42,6 +42,7 @@ export const DEFAULT_CRT_SETTINGS: Readonly<CRTSettings> = Object.freeze({
   humBar: 0,
   channelSwitchEffect: true,
   antiAliasedPixels: true,
+  passThroughSmoothing: true,
   colorMode: 'color',
   maskType: 'off',
   maskStrength: 0.3,

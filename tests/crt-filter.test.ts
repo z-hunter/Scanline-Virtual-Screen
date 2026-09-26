@@ -66,6 +66,7 @@ describe('CRT helpers', () => {
     expect(DEFAULT_CRT_SETTINGS.cursorStyle).toBe('block');
     expect(DEFAULT_CRT_SETTINGS.cursorBrightness).toBe(0);
     expect(DEFAULT_CRT_SETTINGS.crtEmulation).toBe(true);
+    expect(DEFAULT_CRT_SETTINGS.passThroughSmoothing).toBe(true);
     expect(DEFAULT_CRT_SETTINGS.aberration).toBe(0);
     expect(DEFAULT_CRT_SETTINGS.aberrationFalloff).toBe(2);
   });
@@ -78,7 +79,7 @@ describe('CRT helpers', () => {
     expect(phosphorMaskScale(9999)).toBe(3);
   });
 
-  it('uses nearest sampling in WebGL pass-through when anti-moiré is disabled', () => {
+  it('controls WebGL pass-through smoothing independently from anti-moiré', () => {
     const calls: number[] = [];
     const gl = {
       FRAMEBUFFER: 0, ARRAY_BUFFER: 1, FLOAT: 2, TEXTURE0: 3, TEXTURE_2D: 4,
@@ -95,7 +96,7 @@ describe('CRT helpers', () => {
       imageBrightnessLocation: null, imageContrastLocation: null,
     }) as CRTFilter;
 
-    (filter as any).drawPassthrough({ ...DEFAULT_CRT_SETTINGS, antiAliasedPixels: false });
+    (filter as any).drawPassthrough({ ...DEFAULT_CRT_SETTINGS, antiAliasedPixels: true, passThroughSmoothing: false });
 
     expect(calls).toEqual([gl.NEAREST, gl.NEAREST]);
   });
