@@ -1456,7 +1456,7 @@ export class CRTFilter {
       }
     }
 
-    this.setSourceSampling(settings.pixelSmoothing !== false || settings.antiAliasedPixels !== false);
+    this.setSourceSampling(settings.pixelSmoothing !== false);
 
     if (!settings.crtEmulation) {
       if (this.persistenceActive) this.clearPersistence();
