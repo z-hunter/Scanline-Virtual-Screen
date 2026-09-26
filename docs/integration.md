@@ -43,17 +43,22 @@ The host is responsible for TUI heuristics and diagnostics. When it has identifi
 
 ## Controlled React sections
 
-The host owns profile state:
+The host owns profile state and may mount each section independently:
 
 ```tsx
-<DisplaySettingsSection
-  value={profile}
-  modes={availableModes}
-  onChange={setProfile}
-/>
+import {
+  AdvancedCRTSettingsSection,
+  DisplaySettingsSection,
+  TerminalSettingsSection,
+} from 'scanline-virtual-screen/react';
+import 'scanline-virtual-screen/react/styles.css';
+
+<DisplaySettingsSection value={profile} modes={availableModes} onChange={setProfile} />
+<AdvancedCRTSettingsSection value={profile} onChange={setProfile} />
+<TerminalSettingsSection value={profile} fonts={fonts} onChange={setProfile} />
 ```
 
-When only one mode is available, `DisplaySettingsSection` hides its selector. Terminal settings may remain in a profile even when no terminal adapter exists; a nonterminal host simply ignores them.
+When only one mode is available, `DisplaySettingsSection` hides its selector. Terminal settings may remain in a profile even when no terminal adapter exists; a nonterminal host simply omits that section. If a terminal host keeps smooth scrolling outside its persisted profile, pass the optional `smoothScrolling` value and callbacks to `TerminalSettingsSection`; SVS never persists or infers that host state.
 
 ## Scanline Term adapter
 

@@ -70,9 +70,10 @@ Exported helpers include `terminalDimensions`, `fontCellSize`, `canvasFont`, ter
 
 All React sections are controlled. They receive current host state and emit whole updated values; they do not access storage or create a renderer.
 
-- `DisplaySettingsSection({ value, modes, onChange })`
-- `TerminalSettingsSection({ value, fonts, onChange })`
-- `CRTSettingsSection({ value, onChange })`
+- `DisplaySettingsSection({ value, modes, onChange })` — virtual mode and anti-moiré pixels.
+- `TerminalSettingsSection({ value, fonts, onChange, smoothScrolling? })` — ANSI profile, font, cell metrics, cursor, and optional host-owned scroll controls.
+- `AdvancedCRTSettingsSection({ value, onChange })` — the complete CRT panel; `CRTSettingsSection` remains its compatibility alias.
 - `PresetSettingsSection({ value, names, disabled?, onNameChange, onLoad, onSave })`
+- `Knob`, `Switch`, `SegmentedControl`, and `formatValue` for a host's adjacent settings.
 
-Import `scanline-virtual-screen/react/styles.css` when the host wants the supplied base styles. The host may place sections in any layout and provide its own styling.
+Import `scanline-virtual-screen/react/styles.css` when the host wants the supplied base styles. The three screen sections are independent fieldsets, so a nonterminal host can mount only Display and CRT.

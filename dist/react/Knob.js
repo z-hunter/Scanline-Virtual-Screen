@@ -4,7 +4,7 @@ export function formatValue(value) { return Number.isInteger(value) ? String(val
 export function Knob({ value, min, max, step, label, onChange, disabled }) {
     const start = useRef(null);
     const ratio = (value - min) / (max - min);
-    return _jsx("div", { className: `knob ${disabled ? 'disabled' : ''}`, role: "slider", "aria-label": label, "aria-valuemin": min, "aria-valuemax": max, "aria-valuenow": value, "aria-disabled": disabled ? 'true' : undefined, tabIndex: disabled ? -1 : 0, style: { '--knob-progress': `${ratio * 340}deg` }, onPointerDown: (event) => { if (disabled)
+    return _jsx("div", { className: `svs-knob knob ${disabled ? 'disabled' : ''}`, role: "slider", "aria-label": label, "aria-valuemin": min, "aria-valuemax": max, "aria-valuenow": value, "aria-disabled": disabled ? 'true' : undefined, tabIndex: disabled ? -1 : 0, style: { '--knob-progress': `${ratio * 340}deg` }, onPointerDown: (event) => { if (disabled)
             return; start.current = { y: event.clientY, value }; event.currentTarget.setPointerCapture(event.pointerId); }, onPointerMove: (event) => { if (disabled || !start.current || !event.buttons)
             return; const next = Math.min(max, Math.max(min, start.current.value + (start.current.y - event.clientY) * step / 8)); onChange(Math.round(next / step) * step); }, onPointerUp: () => { start.current = null; }, onWheel: (event) => { if (disabled)
             return; event.preventDefault(); onChange(Math.min(max, Math.max(min, value + (event.deltaY < 0 ? step : -step)))); }, onKeyDown: (event) => { if (disabled)

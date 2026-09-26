@@ -21,7 +21,7 @@ Historical releases retain the license terms under which they were published. Do
 Until SVS is published to npm, install a tagged GitHub release over HTTPS:
 
 ```sh
-npm install git+https://github.com/z-hunter/Scanline-Virtual-Screen.git#v2.0.2
+npm install git+https://github.com/z-hunter/Scanline-Virtual-Screen.git#v2.1.0
 ```
 
 SVS exposes independent entrypoints:
@@ -29,11 +29,13 @@ SVS exposes independent entrypoints:
 ```ts
 import { VirtualScreenRenderer, defaultScreenProfile } from 'scanline-virtual-screen/core';
 import { TerminalRenderer } from 'scanline-virtual-screen/terminal'; // optional xterm adapter
-import { DisplaySettingsSection } from 'scanline-virtual-screen/react'; // optional React UI
+import { DisplaySettingsSection, AdvancedCRTSettingsSection } from 'scanline-virtual-screen/react'; // optional React UI
 import 'scanline-virtual-screen/react/styles.css';
 ```
 
 `core` does not import xterm or React. `terminal` declares xterm as an optional peer dependency. `react` declares React as an optional peer dependency.
+
+`DisplaySettingsSection`, `AdvancedCRTSettingsSection`, and `TerminalSettingsSection` are independent controlled fieldsets over `ScreenProfile`; hosts without an xterm scene can use only the first two. The same entrypoint exports `Knob`, `Switch`, and `SegmentedControl` with matching base styles.
 
 ## Quick start
 
