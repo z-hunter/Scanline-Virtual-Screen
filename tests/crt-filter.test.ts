@@ -66,7 +66,7 @@ describe('CRT helpers', () => {
     expect(DEFAULT_CRT_SETTINGS.cursorStyle).toBe('block');
     expect(DEFAULT_CRT_SETTINGS.cursorBrightness).toBe(0);
     expect(DEFAULT_CRT_SETTINGS.crtEmulation).toBe(true);
-    expect(DEFAULT_CRT_SETTINGS.passThroughSmoothing).toBe(true);
+    expect(DEFAULT_CRT_SETTINGS.pixelSmoothing).toBe(true);
     expect(DEFAULT_CRT_SETTINGS.aberration).toBe(0);
     expect(DEFAULT_CRT_SETTINGS.aberrationFalloff).toBe(2);
   });
@@ -79,7 +79,7 @@ describe('CRT helpers', () => {
     expect(phosphorMaskScale(9999)).toBe(3);
   });
 
-  it('controls WebGL pass-through smoothing independently from anti-moiré', () => {
+  it('controls source pixel smoothing independently from anti-moiré', () => {
     const calls: number[] = [];
     const gl = {
       FRAMEBUFFER: 0, ARRAY_BUFFER: 1, FLOAT: 2, TEXTURE0: 3, TEXTURE_2D: 4,
@@ -91,13 +91,13 @@ describe('CRT helpers', () => {
       uniform1i: () => undefined, uniform1f: () => undefined, drawArrays: () => undefined,
     } as unknown as WebGLRenderingContext;
     const filter = Object.assign(Object.create(CRTFilter.prototype), {
-      gl, program: {}, buffer: {}, texture: {}, canvas: { width: 1, height: 1 },
+      gl, program: {}, buffer: {}, texture: {}, previousTexture: {}, canvas: { width: 1, height: 1 },
       positionLocation: 0, texCoordLocation: 0, imageLocation: null,
       imageBrightnessLocation: null, imageContrastLocation: null,
     }) as CRTFilter;
 
-    (filter as any).drawPassthrough({ ...DEFAULT_CRT_SETTINGS, antiAliasedPixels: true, passThroughSmoothing: false });
+    (filter as any).setSourceSampling(false);
 
-    expect(calls).toEqual([gl.NEAREST, gl.NEAREST]);
+    expect(calls).toEqual([gl.NEAREST, gl.NEAREST, gl.NEAREST, gl.NEAREST]);
   });
 });

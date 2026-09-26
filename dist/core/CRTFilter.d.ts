@@ -53,7 +53,7 @@ export interface CRTSettings {
     humBar: number;
     channelSwitchEffect: boolean;
     antiAliasedPixels: boolean;
-    passThroughSmoothing: boolean;
+    pixelSmoothing: boolean;
     colorMode: CRTColorMode;
     maskType: CRTMaskType;
     maskStrength: number;
@@ -177,6 +177,7 @@ export declare class CRTFilter {
     createShader(gl: WebGLRenderingContext, type: number, source: string): WebGLShader | null;
     createProgram(gl: WebGLRenderingContext, vsSource: string, fsSource: string): WebGLProgram | null;
     private selectCRTProgram;
+    private setSourceSampling;
     private drawPassthrough;
     init(): void;
     ensureFBO(width: number, height: number): boolean;

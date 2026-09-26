@@ -353,6 +353,19 @@ export class CRTFilter {
         this.backgroundDesaturationLocation = gl.getUniformLocation(program, 'u_backgroundDesaturation');
         this.imageLocation = gl.getUniformLocation(program, 'u_image');
     }
+    setSourceSampling(smoothing) {
+        if (!this.gl)
+            return;
+        const gl = this.gl;
+        const sampling = smoothing ? gl.LINEAR : gl.NEAREST;
+        for (const texture of [this.texture, this.previousTexture]) {
+            if (!texture)
+                continue;
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, sampling);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, sampling);
+        }
+    }
     drawPassthrough(settings) {
         if (!this.gl || !this.program || !this.buffer || !this.texture)
             return;
@@ -367,9 +380,6 @@ export class CRTFilter {
         gl.vertexAttribPointer(this.texCoordLocation, 2, gl.FLOAT, false, 16, 8);
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, this.texture);
-        const sampling = settings.passThroughSmoothing !== false ? gl.LINEAR : gl.NEAREST;
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, sampling);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, sampling);
         if (this.imageLocation)
             gl.uniform1i(this.imageLocation, 0);
         if (this.imageBrightnessLocation)
@@ -1351,6 +1361,7 @@ export class CRTFilter {
                 this.lumaFbo = nextLumaFbo;
             }
         }
+        this.setSourceSampling(settings.pixelSmoothing !== false);
         if (!settings.crtEmulation) {
             if (this.persistenceActive)
                 this.clearPersistence();
@@ -1545,7 +1556,7 @@ export class CRTFilter {
         if (this.sourceResolutionLocation)
             gl.uniform2f(this.sourceResolutionLocation, sourceCanvas.width, sourceCanvas.height);
         if (this.antiAliasedPixelsLocation)
-            gl.uniform1f(this.antiAliasedPixelsLocation, settings.antiAliasedPixels !== false ? 1.0 : 0.0);
+            gl.uniform1f(this.antiAliasedPixelsLocation, settings.antiAliasedPixels !== false && settings.pixelSmoothing !== false ? 1.0 : 0.0);
         if (this.colorModeLocation) {
             const colorMode = { color: 0, bw: 1, green: 2, 'green-p39': 3, amber: 4, blue: 5 }[settings.colorMode] ?? 0;
             gl.uniform1f(this.colorModeLocation, colorMode);
