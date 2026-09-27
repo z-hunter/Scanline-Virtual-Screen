@@ -23,8 +23,13 @@ const PASSTHROUGH_FS = `
   uniform float u_imageContrast;
   varying vec2 v_texCoord;
 
+  vec3 sampleScreen(vec2 uv) {
+    float inBounds = step(0.0, uv.x) * step(uv.x, 1.0) * step(0.0, uv.y) * step(uv.y, 1.0);
+    return texture2D(u_image, uv).rgb * inBounds;
+  }
+
   vec3 sampleSource(vec2 uv) {
-    vec3 center = texture2D(u_image, uv).rgb;
+    vec3 center = sampleScreen(uv);
     if (u_antiAliasedPixels <= 0.5) return center;
     vec2 footprint = max(u_sourceResolution / u_resolution, vec2(0.0001));
     #ifdef GL_OES_standard_derivatives
@@ -41,10 +46,10 @@ const PASSTHROUGH_FS = `
     vec2 dx = vec2(1.0 / u_resolution.x, 0.0);
     vec2 dy = vec2(0.0, 1.0 / u_resolution.y);
     #endif
-    vec3 resolved = texture2D(u_image, uv + dx * -0.375 + dy * -0.125).rgb;
-    resolved += texture2D(u_image, uv + dx * 0.125 + dy * -0.375).rgb;
-    resolved += texture2D(u_image, uv + dx * 0.375 + dy * 0.125).rgb;
-    resolved += texture2D(u_image, uv + dx * -0.125 + dy * 0.375).rgb;
+    vec3 resolved = sampleScreen(uv + dx * -0.375 + dy * -0.125);
+    resolved += sampleScreen(uv + dx * 0.125 + dy * -0.375);
+    resolved += sampleScreen(uv + dx * 0.375 + dy * 0.125);
+    resolved += sampleScreen(uv + dx * -0.125 + dy * 0.375);
     return mix(center, resolved * 0.25, boundaryRisk);
   }
 
