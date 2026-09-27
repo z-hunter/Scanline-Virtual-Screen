@@ -14,7 +14,7 @@
   "type": "module",
   "files": ["dist", "src/presets", "docs", "README.md", "LICENSE"],
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && node -e \"const fs=require('fs');fs.mkdirSync('dist/react',{recursive:true});fs.copyFileSync('src/react/styles.css','dist/react/styles.css')\"",
+    "build": "tsc -p tsconfig.build.json && node -e \"const fs=require('fs');fs.mkdirSync('dist/react',{recursive:true});fs.copyFileSync('src/react/styles.css','dist/react/styles.css');fs.cpSync('src/react/icons','dist/react/icons',{recursive:true})\"",
     "prepare": "npm run build",
     "test": "vitest run",
     "lint": "eslint ."

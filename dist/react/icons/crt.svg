@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+<!-- side-view cathode-ray tube -->
+<path d="M6 8.5 Q4.8 16 6 23.5"/>
+<path d="M6 8.5 Q10.5 7 15 9.2 L22.5 12.2 Q24.5 13 26.5 13"/>
+<path d="M6 23.5 Q10.5 25 15 22.8 L22.5 19.8 Q24.5 19 26.5 19"/>
+<line x1="26.5" y1="13" x2="26.5" y2="19"/>
+<line x1="27" y1="14.5" x2="29" y2="14.5"/>
+<line x1="27" y1="17.5" x2="29" y2="17.5"/>
+<path d="M7.5 10.3 Q6.7 16 7.5 21.7"/>
+</svg>

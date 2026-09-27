@@ -2,7 +2,7 @@
   width: 100%;
   min-width: 0;
   min-inline-size: 0;
-  margin: 10px 0;
+  margin: var(--svs-section-gap, 16px) 0;
   padding: 10px;
   border: 1px solid #355840;
   border-radius: 5px;
@@ -13,10 +13,44 @@
 .svs-settings-section legend {
   padding: 0 6px;
   color: #7dffae;
-  font-size: 12px;
+  font-size: var(--svs-section-heading-size, 13px);
   letter-spacing: .08em;
   text-transform: uppercase;
 }
+
+.svs-settings-section > legend,
+.svs-knob-group > legend,
+.svs-bezel-section > legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.svs-settings-section > legend::before,
+.svs-knob-group > legend::before,
+.svs-bezel-section > legend::before {
+  content: '';
+  width: var(--svs-section-icon-size, 16px);
+  height: var(--svs-section-icon-size, 16px);
+  background: currentColor;
+  mask: var(--svs-section-icon) center / contain no-repeat;
+}
+
+.svs-settings-section > legend::before {
+  width: var(--svs-section-heading-icon-size, 18px);
+  height: var(--svs-section-heading-icon-size, 18px);
+}
+
+.display-section { --svs-section-icon: url('./icons/display.svg'); }
+.terminal-section { --svs-section-icon: url('./icons/terminal.svg'); }
+.crt-section { --svs-section-icon: url('./icons/crt.svg'); }
+.svs-colors-group { --svs-section-icon: url('./icons/colors.svg'); }
+.svs-final-image-group { --svs-section-icon: url('./icons/bright_contrast.svg'); }
+.svs-geometry-group { --svs-section-icon: url('./icons/screen_geometry.svg'); }
+.svs-raster-group { --svs-section-icon: url('./icons/raster.svg'); }
+.svs-light-group { --svs-section-icon: url('./icons/light.svg'); }
+.svs-temporal-group { --svs-section-icon: url('./icons/fxs.svg'); }
+.svs-bezel-section { --svs-section-icon: url('./icons/bezel.svg'); }
 
 .svs-field,
 .svs-slider-control {
@@ -25,6 +59,9 @@
   color: #b9d7c1;
   font-size: 12px;
 }
+
+.svs-settings-section > .svs-field:first-of-type,
+.svs-settings-section > .svs-switch:first-of-type { margin-top: 2px; }
 
 .svs-field select,
 .svs-field input {
@@ -55,7 +92,7 @@
   width: 100%;
   min-width: 0;
   min-inline-size: 0;
-  margin: 10px 0;
+  margin: var(--svs-section-gap, 16px) 0;
   padding: 8px;
   border: 1px solid #294732;
   border-radius: 4px;
@@ -189,7 +226,7 @@
 .svs-reflex-control-row .svs-slider-control,
 .svs-bezel-control-row .svs-slider-control { width: 100%; }
 
-.svs-bezel-section { margin: 10px 0; padding: 8px; border: 1px solid #294732; border-radius: 4px; }
+.svs-bezel-section { margin: var(--svs-section-gap, 16px) 0; padding: 8px; border: 1px solid #294732; border-radius: 4px; }
 .svs-bezel-control-row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 
 @media (max-width: 540px) {

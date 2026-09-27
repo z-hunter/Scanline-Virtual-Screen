@@ -43,4 +43,11 @@ describe('controlled display section', () => {
     act(() => { colorMode.value = 'green'; colorMode.dispatchEvent(new Event('change', { bubbles: true })); });
     expect(next.crt.colorMode).toBe('green');
   });
+
+  it('marks every CRT subsection for shared styling', () => {
+    const element = document.createElement('div'); document.body.append(element);
+    const root = createRoot(element); roots.push(root);
+    act(() => root.render(<AdvancedCRTSettingsSection value={defaultScreenProfile()} onChange={() => undefined} />));
+    expect(element.querySelectorAll('.svs-colors-group, .svs-final-image-group, .svs-geometry-group, .svs-raster-group, .svs-light-group, .svs-temporal-group, .svs-bezel-section')).toHaveLength(7);
+  });
 });
