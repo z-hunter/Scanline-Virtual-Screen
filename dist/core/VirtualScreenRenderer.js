@@ -1,9 +1,10 @@
-import { CRTFilter } from './CRTFilter.js';
+import { CRTFilter, channelSwitchProgress } from './CRTFilter.js';
 import { OverlayCompositor } from './overlays.js';
 export class VirtualScreenRenderer {
     output;
     compositor = new OverlayCompositor();
     filter = null;
+    channelSwitchStartedAt = null;
     constructor(output, crtEnabled = true) {
         this.output = output;
         if (crtEnabled)
@@ -18,13 +19,25 @@ export class VirtualScreenRenderer {
             if (!ctx)
                 return;
             ctx.imageSmoothingEnabled = settings.pixelSmoothing !== false;
-            ctx.drawImage(this.compositor.canvas, 0, 0, this.output.width, this.output.height);
+            const now = performance.now();
+            const startedAt = this.channelSwitchStartedAt;
+            const roll = startedAt !== null && now - startedAt < 420 ? channelSwitchProgress(startedAt, now) : 0;
+            if (startedAt !== null && now - startedAt >= 420)
+                this.channelSwitchStartedAt = null;
+            ctx.clearRect(0, 0, this.output.width, this.output.height);
+            ctx.drawImage(this.compositor.canvas, 0, -roll * 1.18 * this.output.height, this.output.width, this.output.height);
         }
     }
     isValid() { return this.filter?.isValid() ?? true; }
     restartBreathing() { this.filter?.restartBreathing(); }
     clearPersistence() { this.filter?.clearPersistence(); }
-    startChannelSwitch() { this.filter?.startChannelSwitch(); }
+    isChannelSwitchAnimating() { return this.channelSwitchStartedAt !== null; }
+    startChannelSwitch() {
+        if (this.filter)
+            this.filter.startChannelSwitch();
+        else
+            this.channelSwitchStartedAt = performance.now();
+    }
     dispose() { this.filter?.dispose(); this.filter = null; }
 }
 //# sourceMappingURL=VirtualScreenRenderer.js.map
