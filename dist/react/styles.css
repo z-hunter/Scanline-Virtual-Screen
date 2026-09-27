@@ -26,30 +26,8 @@
   gap: 6px;
 }
 
-.svs-settings-section > legend::before,
-.svs-knob-group > legend::before,
-.svs-bezel-section > legend::before {
-  content: '';
-  width: var(--svs-section-icon-size, 16px);
-  height: var(--svs-section-icon-size, 16px);
-  background: currentColor;
-}
-
-.svs-settings-section > legend::before {
-  width: var(--svs-section-heading-icon-size, 18px);
-  height: var(--svs-section-heading-icon-size, 18px);
-}
-
-.display-section > legend::before { mask: url('./icons/display.svg') center / contain no-repeat; }
-.terminal-section > legend::before { mask: url('./icons/terminal.svg') center / contain no-repeat; }
-.crt-section > legend::before { mask: url('./icons/crt.svg') center / contain no-repeat; }
-.svs-colors-group > legend::before { mask: url('./icons/colors.svg') center / contain no-repeat; }
-.svs-final-image-group > legend::before { mask: url('./icons/bright_contrast.svg') center / contain no-repeat; }
-.svs-geometry-group > legend::before { mask: url('./icons/screen_geometry.svg') center / contain no-repeat; }
-.svs-raster-group > legend::before { mask: url('./icons/raster.svg') center / contain no-repeat; }
-.svs-light-group > legend::before { mask: url('./icons/light.svg') center / contain no-repeat; }
-.svs-temporal-group > legend::before { mask: url('./icons/fxs.svg') center / contain no-repeat; }
-.svs-bezel-section > legend::before { mask: url('./icons/bezel.svg') center / contain no-repeat; }
+.svs-section-icon { flex: none; width: var(--svs-section-icon-size, 16px); height: var(--svs-section-icon-size, 16px); }
+.svs-settings-section > legend .svs-section-icon { width: var(--svs-section-heading-icon-size, 18px); height: var(--svs-section-heading-icon-size, 18px); }
 
 .svs-field,
 .svs-slider-control {
