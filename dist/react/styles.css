@@ -33,7 +33,6 @@
   width: var(--svs-section-icon-size, 16px);
   height: var(--svs-section-icon-size, 16px);
   background: currentColor;
-  mask: var(--svs-section-icon) center / contain no-repeat;
 }
 
 .svs-settings-section > legend::before {
@@ -41,16 +40,16 @@
   height: var(--svs-section-heading-icon-size, 18px);
 }
 
-.display-section { --svs-section-icon: url('./icons/display.svg'); }
-.terminal-section { --svs-section-icon: url('./icons/terminal.svg'); }
-.crt-section { --svs-section-icon: url('./icons/crt.svg'); }
-.svs-colors-group { --svs-section-icon: url('./icons/colors.svg'); }
-.svs-final-image-group { --svs-section-icon: url('./icons/bright_contrast.svg'); }
-.svs-geometry-group { --svs-section-icon: url('./icons/screen_geometry.svg'); }
-.svs-raster-group { --svs-section-icon: url('./icons/raster.svg'); }
-.svs-light-group { --svs-section-icon: url('./icons/light.svg'); }
-.svs-temporal-group { --svs-section-icon: url('./icons/fxs.svg'); }
-.svs-bezel-section { --svs-section-icon: url('./icons/bezel.svg'); }
+.display-section > legend::before { mask: url('./icons/display.svg') center / contain no-repeat; }
+.terminal-section > legend::before { mask: url('./icons/terminal.svg') center / contain no-repeat; }
+.crt-section > legend::before { mask: url('./icons/crt.svg') center / contain no-repeat; }
+.svs-colors-group > legend::before { mask: url('./icons/colors.svg') center / contain no-repeat; }
+.svs-final-image-group > legend::before { mask: url('./icons/bright_contrast.svg') center / contain no-repeat; }
+.svs-geometry-group > legend::before { mask: url('./icons/screen_geometry.svg') center / contain no-repeat; }
+.svs-raster-group > legend::before { mask: url('./icons/raster.svg') center / contain no-repeat; }
+.svs-light-group > legend::before { mask: url('./icons/light.svg') center / contain no-repeat; }
+.svs-temporal-group > legend::before { mask: url('./icons/fxs.svg') center / contain no-repeat; }
+.svs-bezel-section > legend::before { mask: url('./icons/bezel.svg') center / contain no-repeat; }
 
 .svs-field,
 .svs-slider-control {
