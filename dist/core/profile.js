@@ -2,7 +2,7 @@ import { DEFAULT_CRT_SETTINGS } from './defaults.js';
 import { isColorProfile } from './color-profiles.js';
 const terminalKeys = new Set([
     'colorProfile', 'consoleFont', 'fallbackFont', 'consoleFontSize', 'cellWidthAdjustment',
-    'cellHeightAdjustment', 'cursorStyle', 'cursorBrightness',
+    'cellHeightAdjustment', 'cursorStyle', 'cursorBlink', 'cursorBrightness',
 ]);
 export function profileToRenderSettings(profile) {
     return {
@@ -14,6 +14,7 @@ export function profileToRenderSettings(profile) {
         cellWidthAdjustment: profile.terminal.cellWidthAdjustment,
         cellHeightAdjustment: profile.terminal.cellHeightAdjustment,
         cursorStyle: profile.terminal.cursorStyle,
+        cursorBlink: profile.terminal.cursorBlink,
         cursorBrightness: profile.terminal.cursorBrightness,
     };
 }
@@ -32,6 +33,7 @@ export function profileFromRenderSettings(settings, modeId) {
             cellWidthAdjustment: settings.cellWidthAdjustment,
             cellHeightAdjustment: settings.cellHeightAdjustment,
             cursorStyle: settings.cursorStyle,
+            cursorBlink: settings.cursorBlink,
             cursorBrightness: settings.cursorBrightness,
         },
         crt: crt,
@@ -95,6 +97,8 @@ function normalizeTerminalSettings(source, fallback) {
     result.cellHeightAdjustment = integerValue(source.cellHeightAdjustment, result.cellHeightAdjustment, -8, 16);
     if (source.cursorStyle === 'block' || source.cursorStyle === 'underline' || source.cursorStyle === 'bar')
         result.cursorStyle = source.cursorStyle;
+    if (typeof source.cursorBlink === 'boolean')
+        result.cursorBlink = source.cursorBlink;
     result.cursorBrightness = numberValue(source.cursorBrightness, result.cursorBrightness, 0, 1);
     return result;
 }
@@ -125,6 +129,7 @@ function terminalToRender(terminal) {
         cellWidthAdjustment: terminal.cellWidthAdjustment,
         cellHeightAdjustment: terminal.cellHeightAdjustment,
         cursorStyle: terminal.cursorStyle,
+        cursorBlink: terminal.cursorBlink,
         cursorBrightness: terminal.cursorBrightness,
     };
 }

@@ -1,6 +1,6 @@
 import type { CRTSettings, CursorStyle } from './CRTFilter.js';
 import { type ColorProfileId } from './color-profiles.js';
-type TerminalKeys = 'colorProfile' | 'consoleFont' | 'fallbackFont' | 'consoleFontSize' | 'cellWidthAdjustment' | 'cellHeightAdjustment' | 'cursorStyle' | 'cursorBrightness';
+type TerminalKeys = 'colorProfile' | 'consoleFont' | 'fallbackFont' | 'consoleFontSize' | 'cellWidthAdjustment' | 'cellHeightAdjustment' | 'cursorStyle' | 'cursorBlink' | 'cursorBrightness';
 export type TerminalSettings = {
     colorProfile: ColorProfileId;
     fontFamily: string;
@@ -9,6 +9,7 @@ export type TerminalSettings = {
     cellWidthAdjustment: number;
     cellHeightAdjustment: number;
     cursorStyle: CursorStyle;
+    cursorBlink: boolean;
     cursorBrightness: number;
 };
 export type CRTVisualSettings = Omit<CRTSettings, TerminalKeys>;
@@ -34,6 +35,7 @@ export type RenderSettings = CRTVisualSettings & {
     cellWidthAdjustment: number;
     cellHeightAdjustment: number;
     cursorStyle: CursorStyle;
+    cursorBlink: boolean;
     cursorBrightness: number;
 };
 export declare function profileToRenderSettings(profile: ScreenProfile): RenderSettings;

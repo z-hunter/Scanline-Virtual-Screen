@@ -125,6 +125,7 @@ export interface CRTSettings {
   maskType: CRTMaskType;
   maskStrength: number;
   cursorStyle: CursorStyle;
+  cursorBlink: boolean;
   cursorBrightness: number; // 0.0 to 1.0 additional brightness relative to the profile cursor color
 }
 

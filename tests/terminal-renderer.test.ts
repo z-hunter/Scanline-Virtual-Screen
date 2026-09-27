@@ -323,7 +323,7 @@ describe('TerminalRenderer', () => {
     expect(terminalAverageLuma(terminal as never, colorProfile('dos-vga'), { width: 100, height: 100, cellWidth: 10, cellHeight: 10, padding: 0 })).toBeCloseTo(0.0008);
   });
 
-  it('renders cursor according to cursorStyle setting', () => {
+  it('renders cursor according to terminal cursor options', () => {
     const fillRectSpy = vi.fn();
     const fillTextSpy = vi.fn();
     const context = {
@@ -369,19 +369,24 @@ describe('TerminalRenderer', () => {
     const underlineCall = fillRectSpy.mock.calls.find((call) => call[2] === 8 && call[3] === 2);
     expect(underlineCall).toBeDefined();
 
-    // Test 'bar'
+    // Terminal state overrides the persisted style while an application controls it.
     fillRectSpy.mockClear();
+    terminal.options.cursorStyle = 'bar';
     renderer.markDirty();
-    renderer.draw(0, { ...DEFAULT_CRT_SETTINGS, cursorStyle: 'bar' });
-    const barCall = fillRectSpy.mock.calls.find((call) => call[2] === 2 && call[3] === 10);
+    renderer.draw(0, { ...DEFAULT_CRT_SETTINGS, cursorStyle: 'block' });
+    const barCall = fillRectSpy.mock.calls.find((call) => call[2] === 3 && call[3] === 10);
     expect(barCall).toBeDefined();
 
     // Test 'block'
     fillRectSpy.mockClear();
     renderer.markDirty();
-    renderer.draw(0, { ...DEFAULT_CRT_SETTINGS, cursorStyle: 'block' });
+    terminal.options.cursorStyle = 'block';
+    renderer.draw(0, { ...DEFAULT_CRT_SETTINGS, cursorStyle: 'underline' });
     const blockCall = fillRectSpy.mock.calls.find((call) => call[2] === 8 && call[3] === 8);
     expect(blockCall).toBeDefined();
+    terminal.options.cursorBlink = false;
+    renderer.setFocused(true);
+    expect(renderer.isCursorBlinkActive()).toBe(false);
   });
 
   it('does not blink cursor while moving or typing, and only blinks when stationary', () => {

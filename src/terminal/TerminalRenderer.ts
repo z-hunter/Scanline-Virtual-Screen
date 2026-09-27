@@ -347,7 +347,7 @@ export class TerminalRenderer {
   markDirty(): void { this.dirty = true; this.fullDirty = true; }
   private markTerminalDirty(): void { this.dirty = true; }
   private markCursorMoved(): void { this.cursorMoved = true; this.dirty = true; }
-  isCursorBlinkActive(): boolean { return this.focused; }
+  isCursorBlinkActive(): boolean { return this.focused && this.terminal?.options.cursorBlink !== false; }
   getCursorBlinkPhase(time: number): number {
     if (!this.isCursorBlinkActive()) return 0;
     const idleTime = Math.max(0, time - this.lastCursorMoveTime);
@@ -442,7 +442,7 @@ export class TerminalRenderer {
     }
     const baseFont = canvasFont(settings.consoleFontSize, settings.consoleFont, settings.fallbackFont);
     ctx.globalAlpha = 1; ctx.fillStyle = profile.background; if (this.fullDirty) ctx.fillRect(0, 0, source.width, source.height); ctx.font = baseFont; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
-    const cursorStyle = settings.cursorStyle ?? terminal.options.cursorStyle ?? 'block';
+    const cursorStyle = terminal.options.cursorStyle ?? settings.cursorStyle ?? 'block';
     const cursorColor = cursorStyle === 'block' ? brightenColor(profile.cursor ?? profile.foreground, settings.cursorBrightness ?? 0) : null;
     for (const row of changedRows) this.drawRow(ctx, buffer.getLine(buffer.viewportY + row), row, terminal.cols, buffer.viewportY, cell, profile, offset, cellSize, baseFont, row === nextCursorRow ? cursorColor : null, buffer.cursorX);
     if (nextSignatures.length) { this.sourceLuma = terminalAverageLuma(terminal, profile, { width: source.width, height: source.height, cellWidth: cellSize.width, cellHeight: cellSize.height, padding: terminalPadding(source.width, source.height) }); this.hasMeasuredSourceLuma = true; }
@@ -460,7 +460,7 @@ export class TerminalRenderer {
   }
   private drawCursor(ctx: CanvasRenderingContext2D | null, settings: CRTSettings, profile: TerminalColorProfile, offset: { x: number; y: number }, cellSize: { width: number; height: number }, buffer: { cursorX: number; cursorY: number }, cursorRow: number | null): void {
     if (!ctx || cursorRow === null) return;
-    const cursorStyle = settings.cursorStyle ?? this.terminal?.options.cursorStyle ?? 'block';
+    const cursorStyle = this.terminal?.options.cursorStyle ?? settings.cursorStyle ?? 'block';
     if (cursorStyle === 'block') return;
     const x = offset.x + cellSize.width * buffer.cursorX;
     const y = offset.y + cellSize.height * buffer.cursorY;
@@ -469,7 +469,7 @@ export class TerminalRenderer {
       const underlineHeight = Math.max(2, Math.round(cellSize.height * 0.1));
       ctx.fillRect(x, y + Math.ceil(cellSize.height) - underlineHeight - 1, cellSize.width, underlineHeight);
     } else if (cursorStyle === 'bar') {
-      const barWidth = Math.max(2, Math.min(cellSize.width, this.terminal?.options.cursorWidth ?? cellSize.width * 0.15));
+      const barWidth = Math.max(3, Math.min(cellSize.width, this.terminal?.options.cursorWidth ?? cellSize.width * 0.15));
       ctx.fillRect(x, y, barWidth, Math.ceil(cellSize.height));
     } else {
       const height = Math.max(1, Math.ceil(cellSize.height) - 2);

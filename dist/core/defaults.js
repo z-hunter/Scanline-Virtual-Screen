@@ -45,6 +45,7 @@ export const DEFAULT_CRT_SETTINGS = Object.freeze({
     maskType: 'off',
     maskStrength: 0.3,
     cursorStyle: 'block',
+    cursorBlink: true,
     cursorBrightness: 0,
 });
 //# sourceMappingURL=defaults.js.map

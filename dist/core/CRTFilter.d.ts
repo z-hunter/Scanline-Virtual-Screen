@@ -58,6 +58,7 @@ export interface CRTSettings {
     maskType: CRTMaskType;
     maskStrength: number;
     cursorStyle: CursorStyle;
+    cursorBlink: boolean;
     cursorBrightness: number;
 }
 export declare function crtEffectMask(settings: Pick<CRTSettings, 'persistence' | 'bloom' | 'glow' | 'imperfectSignal' | 'humBar' | 'channelSwitchEffect'> & Partial<Pick<CRTSettings, 'ambientGlassLight' | 'bezelHighlight' | 'bezelGlow' | 'bezelGlowMode' | 'reflexBar' | 'reflexBarEnabled'>>): number;

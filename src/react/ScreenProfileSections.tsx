@@ -104,7 +104,7 @@ export function TerminalSettingsSection({ value, fonts, onChange, smoothScrollin
       </div>
       {smoothScrolling && <><Switch label="Smooth terminal scrolling" checked={smoothScrolling.enabled} onChange={smoothScrolling.onEnabledChange} />{smoothScrolling.enabled && <Switch label="Heuristic TUI scrolling" checked={smoothScrolling.tuiEnabled} onChange={smoothScrolling.onTuiEnabledChange} />}</>}
       <div className="svs-setting-block setting-block"><span className="svs-setting-label setting-label">Cursor style</span><SegmentedControl value={value.terminal.cursorStyle} data-testid="cursor-style-segmented" options={[{ value: 'block', label: 'Block' }, { value: 'underline', label: 'Underline' }, { value: 'bar', label: 'Bar' }]} onChange={(cursorStyle) => update({ cursorStyle })} /></div>
-      <label className="svs-slider-control slider-control"><span>Cursor brightness<output>{formatValue(value.terminal.cursorBrightness)}</output></span><Knob label="Cursor brightness" min={0} max={1} step={0.05} value={value.terminal.cursorBrightness} onChange={(cursorBrightness) => update({ cursorBrightness })} /></label>
+      <div className="svs-font-row font-control-row"><Switch label="Cursor blink" checked={value.terminal.cursorBlink} onChange={(cursorBlink) => update({ cursorBlink })} /><label className="svs-slider-control slider-control"><span>Cursor brightness<output>{formatValue(value.terminal.cursorBrightness)}</output></span><Knob label="Cursor brightness" min={0} max={1} step={0.05} value={value.terminal.cursorBrightness} onChange={(cursorBrightness) => update({ cursorBrightness })} /></label></div>
     </fieldset>
   );
 }

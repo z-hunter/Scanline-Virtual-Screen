@@ -2,7 +2,7 @@ import type { CRTSettings, CursorStyle } from './CRTFilter.js';
 import { DEFAULT_CRT_SETTINGS } from './defaults.js';
 import { isColorProfile, type ColorProfileId } from './color-profiles.js';
 
-type TerminalKeys = 'colorProfile' | 'consoleFont' | 'fallbackFont' | 'consoleFontSize' | 'cellWidthAdjustment' | 'cellHeightAdjustment' | 'cursorStyle' | 'cursorBrightness';
+type TerminalKeys = 'colorProfile' | 'consoleFont' | 'fallbackFont' | 'consoleFontSize' | 'cellWidthAdjustment' | 'cellHeightAdjustment' | 'cursorStyle' | 'cursorBlink' | 'cursorBrightness';
 
 export type TerminalSettings = {
   colorProfile: ColorProfileId;
@@ -12,6 +12,7 @@ export type TerminalSettings = {
   cellWidthAdjustment: number;
   cellHeightAdjustment: number;
   cursorStyle: CursorStyle;
+  cursorBlink: boolean;
   cursorBrightness: number;
 };
 
@@ -34,12 +35,13 @@ export type RenderSettings = CRTVisualSettings & {
   cellWidthAdjustment: number;
   cellHeightAdjustment: number;
   cursorStyle: CursorStyle;
+  cursorBlink: boolean;
   cursorBrightness: number;
 };
 
 const terminalKeys = new Set<TerminalKeys>([
   'colorProfile', 'consoleFont', 'fallbackFont', 'consoleFontSize', 'cellWidthAdjustment',
-  'cellHeightAdjustment', 'cursorStyle', 'cursorBrightness',
+  'cellHeightAdjustment', 'cursorStyle', 'cursorBlink', 'cursorBrightness',
 ]);
 
 export function profileToRenderSettings(profile: ScreenProfile): RenderSettings {
@@ -52,6 +54,7 @@ export function profileToRenderSettings(profile: ScreenProfile): RenderSettings 
     cellWidthAdjustment: profile.terminal.cellWidthAdjustment,
     cellHeightAdjustment: profile.terminal.cellHeightAdjustment,
     cursorStyle: profile.terminal.cursorStyle,
+    cursorBlink: profile.terminal.cursorBlink,
     cursorBrightness: profile.terminal.cursorBrightness,
   };
 }
@@ -70,6 +73,7 @@ export function profileFromRenderSettings(settings: RenderSettings, modeId: stri
       cellWidthAdjustment: settings.cellWidthAdjustment,
       cellHeightAdjustment: settings.cellHeightAdjustment,
       cursorStyle: settings.cursorStyle,
+      cursorBlink: settings.cursorBlink,
       cursorBrightness: settings.cursorBrightness,
     },
     crt: crt as CRTVisualSettings,
@@ -129,6 +133,7 @@ function normalizeTerminalSettings(source: Record<string, unknown>, fallback: Te
   result.cellWidthAdjustment = integerValue(source.cellWidthAdjustment, result.cellWidthAdjustment, -8, 16);
   result.cellHeightAdjustment = integerValue(source.cellHeightAdjustment, result.cellHeightAdjustment, -8, 16);
   if (source.cursorStyle === 'block' || source.cursorStyle === 'underline' || source.cursorStyle === 'bar') result.cursorStyle = source.cursorStyle;
+  if (typeof source.cursorBlink === 'boolean') result.cursorBlink = source.cursorBlink;
   result.cursorBrightness = numberValue(source.cursorBrightness, result.cursorBrightness, 0, 1);
   return result;
 }
@@ -159,6 +164,7 @@ function terminalToRender(terminal: TerminalSettings): Pick<RenderSettings, Term
     cellWidthAdjustment: terminal.cellWidthAdjustment,
     cellHeightAdjustment: terminal.cellHeightAdjustment,
     cursorStyle: terminal.cursorStyle,
+    cursorBlink: terminal.cursorBlink,
     cursorBrightness: terminal.cursorBrightness,
   };
 }

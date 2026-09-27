@@ -422,7 +422,7 @@ export class TerminalRenderer {
     markDirty() { this.dirty = true; this.fullDirty = true; }
     markTerminalDirty() { this.dirty = true; }
     markCursorMoved() { this.cursorMoved = true; this.dirty = true; }
-    isCursorBlinkActive() { return this.focused; }
+    isCursorBlinkActive() { return this.focused && this.terminal?.options.cursorBlink !== false; }
     getCursorBlinkPhase(time) {
         if (!this.isCursorBlinkActive())
             return 0;
@@ -560,7 +560,7 @@ export class TerminalRenderer {
         ctx.font = baseFont;
         ctx.textAlign = 'left';
         ctx.textBaseline = 'middle';
-        const cursorStyle = settings.cursorStyle ?? terminal.options.cursorStyle ?? 'block';
+        const cursorStyle = terminal.options.cursorStyle ?? settings.cursorStyle ?? 'block';
         const cursorColor = cursorStyle === 'block' ? brightenColor(profile.cursor ?? profile.foreground, settings.cursorBrightness ?? 0) : null;
         for (const row of changedRows)
             this.drawRow(ctx, buffer.getLine(buffer.viewportY + row), row, terminal.cols, buffer.viewportY, cell, profile, offset, cellSize, baseFont, row === nextCursorRow ? cursorColor : null, buffer.cursorX);
@@ -597,7 +597,7 @@ export class TerminalRenderer {
     drawCursor(ctx, settings, profile, offset, cellSize, buffer, cursorRow) {
         if (!ctx || cursorRow === null)
             return;
-        const cursorStyle = settings.cursorStyle ?? this.terminal?.options.cursorStyle ?? 'block';
+        const cursorStyle = this.terminal?.options.cursorStyle ?? settings.cursorStyle ?? 'block';
         if (cursorStyle === 'block')
             return;
         const x = offset.x + cellSize.width * buffer.cursorX;
@@ -608,7 +608,7 @@ export class TerminalRenderer {
             ctx.fillRect(x, y + Math.ceil(cellSize.height) - underlineHeight - 1, cellSize.width, underlineHeight);
         }
         else if (cursorStyle === 'bar') {
-            const barWidth = Math.max(2, Math.min(cellSize.width, this.terminal?.options.cursorWidth ?? cellSize.width * 0.15));
+            const barWidth = Math.max(3, Math.min(cellSize.width, this.terminal?.options.cursorWidth ?? cellSize.width * 0.15));
             ctx.fillRect(x, y, barWidth, Math.ceil(cellSize.height));
         }
         else {

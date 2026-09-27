@@ -64,6 +64,7 @@ describe('CRT helpers', () => {
     expect(DEFAULT_CRT_SETTINGS.maskType).toBe('off');
     expect(DEFAULT_CRT_SETTINGS.maskStrength).toBe(0.3);
     expect(DEFAULT_CRT_SETTINGS.cursorStyle).toBe('block');
+    expect(DEFAULT_CRT_SETTINGS.cursorBlink).toBe(true);
     expect(DEFAULT_CRT_SETTINGS.cursorBrightness).toBe(0);
     expect(DEFAULT_CRT_SETTINGS.crtEmulation).toBe(true);
     expect(DEFAULT_CRT_SETTINGS.pixelSmoothing).toBe(true);

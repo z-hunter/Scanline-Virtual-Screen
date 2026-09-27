@@ -8,6 +8,7 @@ describe('ScreenProfile', () => {
     expect(profile?.schemaVersion).toBe(1);
     expect(profile?.virtualScreen.modeId).toBe('640x480');
     expect(profile?.terminal.fontFamily).toBe('Cascadia Mono');
+    expect(profile?.terminal.cursorBlink).toBe(true);
     expect(profile?.crt.curvature).toBe(DEFAULT_CRT_SETTINGS.curvature);
   });
 

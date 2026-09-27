@@ -47,5 +47,6 @@ export const DEFAULT_CRT_SETTINGS: Readonly<CRTSettings> = Object.freeze({
   maskType: 'off',
   maskStrength: 0.3,
   cursorStyle: 'block',
+  cursorBlink: true,
   cursorBrightness: 0,
 });
