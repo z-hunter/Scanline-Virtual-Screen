@@ -12,6 +12,10 @@ describe('terminal color profiles', () => {
     expect(colorProfile('commodore-128').background).toBe('#000000');
     expect(colorProfile('cyberpunk').colors[1]).toBe('#8A2458');
     expect(colorProfile('cyberpunk').colors[10]).toBe('#51E946');
+    expect(colorProfile('chalkbox').colors[0]).toBe('#0a1118');
+    expect(colorProfile('chalkbox').colors[15]).toBe('#f1e4c9');
+    expect(colorProfile('inverted').colors[1]).toBe('#d8a19c');
+    expect(colorProfile('inverted').colors[15]).toBe('#1f262d');
     expect(colorProfile('xterm-x11').colors).toHaveLength(256);
     expect(profileColor(colorProfile('solarized-dark'), 196)).toBe('rgb(255 0 0)');
   });
@@ -22,4 +26,3 @@ describe('terminal color profiles', () => {
     expect(remapLegacyRgb(colorProfile('dos-vga'), '#123456')).toBe('#123456');
   });
 });
-

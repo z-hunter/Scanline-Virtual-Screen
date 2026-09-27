@@ -122,7 +122,7 @@ function normalizeRenderSettings(source: Record<string, unknown>, fallback: Rend
 }
 
 function normalizeTerminalSettings(source: Record<string, unknown>, fallback: TerminalSettings): TerminalSettings {
-  const color = source.colorProfile === 'zx-spectrum' || source.colorProfile === 'retrowave' ? 'cyberpunk' : source.colorProfile;
+  const color = source.colorProfile === 'zx-spectrum' || source.colorProfile === 'retrowave' ? 'cyberpunk' : source.colorProfile === 'circadia' ? 'chalkbox' : source.colorProfile;
   const result = { ...fallback };
   if (isColorProfile(color)) result.colorProfile = color;
   const font = source.fontFamily ?? source.consoleFont;

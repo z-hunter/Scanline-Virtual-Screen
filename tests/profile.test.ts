@@ -18,6 +18,11 @@ describe('ScreenProfile', () => {
     expect(profile?.virtualScreen.modeId).toBe('640x480');
   });
 
+  it('renames the old Circadia profile id', () => {
+    const profile = normalizeProfile({ schemaVersion: 1, virtualScreen: {}, terminal: { colorProfile: 'circadia' }, crt: {} }, defaultScreenProfile(), [{ id: '640x480' }]);
+    expect(profile?.terminal.colorProfile).toBe('chalkbox');
+  });
+
   it('round-trips the canonical profile without losing render settings', () => {
     const original = profileFromLegacyPreset({ version: 1, resolution: '800x600', crt: { ...DEFAULT_CRT_SETTINGS, glow: 1.5 } });
     const normalized = normalizeProfile(JSON.parse(profileToJSON(original)), defaultScreenProfile(), [{ id: '800x600' }]);

@@ -82,7 +82,7 @@ function normalizeRenderSettings(source, fallback) {
     return result;
 }
 function normalizeTerminalSettings(source, fallback) {
-    const color = source.colorProfile === 'zx-spectrum' || source.colorProfile === 'retrowave' ? 'cyberpunk' : source.colorProfile;
+    const color = source.colorProfile === 'zx-spectrum' || source.colorProfile === 'retrowave' ? 'cyberpunk' : source.colorProfile === 'circadia' ? 'chalkbox' : source.colorProfile;
     const result = { ...fallback };
     if (isColorProfile(color))
         result.colorProfile = color;

@@ -1,4 +1,4 @@
-export const COLOR_PROFILE_IDS = ['dos-vga', 'windows-legacy', 'windows-campbell', 'xterm-x11', 'solarized-dark', 'ibm-3279', 'commodore-64', 'commodore-128', 'cyberpunk'] as const;
+export const COLOR_PROFILE_IDS = ['dos-vga', 'windows-legacy', 'windows-campbell', 'xterm-x11', 'solarized-dark', 'ibm-3279', 'commodore-64', 'commodore-128', 'cyberpunk', 'chalkbox', 'inverted'] as const;
 
 export type ColorProfileId = (typeof COLOR_PROFILE_IDS)[number];
 
@@ -63,6 +63,14 @@ const profiles: TerminalColorProfile[] = [
   {
     id: 'cyberpunk', label: 'Cyberpunk', foreground: '#b8b4c4', background: '#080812',
     colors: ['#080812', '#8A2458', '#187D56', '#8C7C25', '#28187D', '#630D7A', '#3D99CA', '#B8B4C4', '#555064', '#ED4B78', '#51E946', '#FFFE4C', '#5A4ED6', '#DA11C9', '#46FEEC', '#F4F2FF'],
+  },
+  {
+    id: 'chalkbox', label: 'Chalkbox', foreground: '#abb2bf', background: '#15141b',
+    colors: ['#0a1118', '#99292d', '#1f6a31', '#9e7000', '#00438f', '#5b1d82', '#00859a', '#c8d2d8', '#465663', '#e86763', '#43b357', '#e2b22c', '#47a0ff', '#ab63d1', '#1fc4da', '#f1e4c9'],
+  },
+  {
+    id: 'inverted', label: 'Inverted', foreground: '#38434d', background: '#e8dfcf',
+    colors: ['#e8dfcf', '#d8a19c', '#a8c798', '#d4b36a', '#a7c1e3', '#c7abd8', '#88afb7', '#38434d', '#968f84', '#a33a35', '#2b6632', '#866600', '#2c609e', '#70418c', '#0a6f80', '#1f262d'],
   },
 ];
 
