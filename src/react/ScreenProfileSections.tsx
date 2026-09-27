@@ -80,7 +80,7 @@ function SectionIcon({ name }: { name: SectionIconName }) {
 
 const groupIcons: Record<string, SectionIconName> = { 'Final image': 'brightContrast', Geometry: 'geometry', Raster: 'raster', Light: 'light', Temporal: 'fxs' };
 
-export function DisplaySettingsSection({ value, modes, onChange }: ProfileSectionProps & { modes: readonly ScreenMode[] }) {
+export function DisplaySettingsSection({ value, modes, onChange, showChannelSwitch = true }: ProfileSectionProps & { modes: readonly ScreenMode[]; showChannelSwitch?: boolean }) {
   const update = (patch: Partial<CRTVisualSettings>) => onChange({ ...value, crt: { ...value.crt, ...patch } });
   return (
     <fieldset className="svs-settings-section screen-section display-section">
@@ -88,7 +88,7 @@ export function DisplaySettingsSection({ value, modes, onChange }: ProfileSectio
       {modes.length > 1 && <label className="svs-field resolution-control">Virtual resolution<select value={value.virtualScreen.modeId} onChange={(event) => onChange({ ...value, virtualScreen: { modeId: event.target.value } })}>{modes.map((mode) => <option key={mode.id} value={mode.id}>{mode.label ?? mode.id}</option>)}</select></label>}
       <Switch label="Anti-moiré pixels" checked={value.crt.antiAliasedPixels} onChange={(antiAliasedPixels) => update({ antiAliasedPixels })} />
       <Switch label="Pixel smoothing" checked={value.crt.pixelSmoothing} onChange={(pixelSmoothing) => update({ pixelSmoothing })} />
-      <Switch label="Channel switch roll" checked={value.crt.channelSwitchEffect} onChange={(channelSwitchEffect) => update({ channelSwitchEffect })} />
+      {showChannelSwitch && <Switch label="Channel switch roll" checked={value.crt.channelSwitchEffect} onChange={(channelSwitchEffect) => update({ channelSwitchEffect })} />}
     </fieldset>
   );
 }

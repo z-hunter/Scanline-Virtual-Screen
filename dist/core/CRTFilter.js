@@ -121,6 +121,7 @@ export class CRTFilter {
     imperfectSignalLocation;
     humBarLocation;
     channelSwitchLocation;
+    channelSwitchIncomingLocation;
     imageLocation;
     bezelThicknessLocation = null;
     reflexBarLocation = null;
@@ -181,6 +182,7 @@ export class CRTFilter {
     persistenceActive = false;
     hasSourceFrame = false;
     channelSwitchStartedAt = 0;
+    channelSwitchIncoming = false;
     lumaProgram = null;
     lumaTexture = null;
     previousLumaTexture = null;
@@ -228,6 +230,7 @@ export class CRTFilter {
             this.imperfectSignalLocation = null;
             this.humBarLocation = null;
             this.channelSwitchLocation = null;
+            this.channelSwitchIncomingLocation = null;
             this.imageLocation = null;
             this.bezelThicknessLocation = null;
             this.reflexBarLocation = null;
@@ -280,6 +283,7 @@ export class CRTFilter {
         this.imperfectSignalLocation = null;
         this.humBarLocation = null;
         this.channelSwitchLocation = null;
+        this.channelSwitchIncomingLocation = null;
         this.imageLocation = null;
         this.bezelThicknessLocation = null;
         this.reflexBarLocation = null;
@@ -382,6 +386,7 @@ export class CRTFilter {
         this.imperfectSignalLocation = gl.getUniformLocation(program, 'u_imperfectSignal');
         this.humBarLocation = gl.getUniformLocation(program, 'u_humBar');
         this.channelSwitchLocation = gl.getUniformLocation(program, 'u_channelSwitch');
+        this.channelSwitchIncomingLocation = gl.getUniformLocation(program, 'u_channelSwitchIncoming');
         this.sourceResolutionLocation = gl.getUniformLocation(program, 'u_sourceResolution');
         this.antiAliasedPixelsLocation = gl.getUniformLocation(program, 'u_antiAliasedPixels');
         this.colorModeLocation = gl.getUniformLocation(program, 'u_colorMode');
@@ -407,7 +412,7 @@ export class CRTFilter {
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, sampling);
         }
     }
-    drawPassthrough(settings, sourceWidth, sourceHeight) {
+    drawPassthrough(settings, sourceWidth, sourceHeight, now) {
         if (!this.gl || !this.program || !this.buffer || !this.texture)
             return;
         const gl = this.gl;
@@ -433,6 +438,15 @@ export class CRTFilter {
             gl.uniform1f(this.imageBrightnessLocation, settings.imageBrightness);
         if (this.imageContrastLocation)
             gl.uniform1f(this.imageContrastLocation, settings.imageContrast);
+        const channelSwitch = settings.channelSwitchEffect ? channelSwitchProgress(this.channelSwitchStartedAt, now) : 0;
+        if (now - this.channelSwitchStartedAt >= 420)
+            this.channelSwitchStartedAt = 0;
+        if (this.channelSwitchLocation)
+            gl.uniform1f(this.channelSwitchLocation, channelSwitch);
+        if (this.channelSwitchIncomingLocation)
+            gl.uniform1f(this.channelSwitchIncomingLocation, this.channelSwitchIncoming ? 1 : 0);
+        if (this.crtEmulationLocation)
+            gl.uniform1f(this.crtEmulationLocation, 0);
         gl.drawArrays(gl.TRIANGLES, 0, 6);
     }
     init() {
@@ -501,6 +515,7 @@ export class CRTFilter {
             uniform float u_imperfectSignal;
             uniform float u_humBar;
             uniform float u_channelSwitch;
+            uniform float u_channelSwitchIncoming;
             uniform vec2 u_sourceResolution;
             uniform float u_antiAliasedPixels;
             uniform float u_colorMode;
@@ -645,7 +660,12 @@ export class CRTFilter {
 
              void main() {
                  if (u_crtEmulation < 0.5) {
-                     vec3 imageColor = texture2D(u_image, v_texCoord).rgb;
+                     vec2 imageUV = v_texCoord;
+                     #if ENABLE_CHANNEL_SWITCH
+                     float rollPeriod = mix(1.18, 1.0, u_channelSwitchIncoming);
+                     imageUV.y = mod(imageUV.y + u_channelSwitch * rollPeriod, rollPeriod);
+                     #endif
+                     vec3 imageColor = texture2D(u_image, imageUV).rgb * step(imageUV.y, 1.0);
                      imageColor = (imageColor - 0.5) * u_imageContrast + 0.5;
                      imageColor *= u_imageBrightness;
                      gl_FragColor = vec4(clamp(imageColor, 0.0, 1.0), 1.0);
@@ -779,7 +799,7 @@ export class CRTFilter {
                 #if ENABLE_CHANNEL_SWITCH
                 // The blank interval separates consecutive copies of the raster,
                 // so the top cannot wrap into the bottom while the raster breathes.
-                float rollPeriod = 1.18;
+                float rollPeriod = mix(1.18, 1.0, u_channelSwitchIncoming);
                 rasterUV.y = mod(rasterUV.y + u_channelSwitch * rollPeriod, rollPeriod);
                 #endif
 
@@ -1310,7 +1330,9 @@ export class CRTFilter {
     }
     startChannelSwitch() {
         this.channelSwitchStartedAt = performance.now();
+        this.channelSwitchIncoming = false;
     }
+    joinChannelSwitch() { this.channelSwitchIncoming = this.channelSwitchStartedAt !== 0; }
     restartBreathing() {
         this.smoothedExpansion = 0;
         this.lastBreathingTime = 0;
@@ -1425,8 +1447,8 @@ export class CRTFilter {
             if (this.persistenceActive)
                 this.clearPersistence();
             this.persistenceActive = false;
-            this.selectCRTProgram(-1);
-            this.drawPassthrough(settings, sourceCanvas.width, sourceCanvas.height);
+            this.selectCRTProgram(settings.channelSwitchEffect ? 32 : 0);
+            this.drawPassthrough(settings, sourceCanvas.width, sourceCanvas.height, performance.now());
             return;
         }
         const persistence = settings.persistence || 0.0;
@@ -1612,6 +1634,8 @@ export class CRTFilter {
             this.channelSwitchStartedAt = 0;
         if (this.channelSwitchLocation)
             gl.uniform1f(this.channelSwitchLocation, channelSwitch);
+        if (this.channelSwitchIncomingLocation)
+            gl.uniform1f(this.channelSwitchIncomingLocation, this.channelSwitchIncoming ? 1 : 0);
         if (this.sourceResolutionLocation)
             gl.uniform2f(this.sourceResolutionLocation, sourceCanvas.width, sourceCanvas.height);
         if (this.antiAliasedPixelsLocation)

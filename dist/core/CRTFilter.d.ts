@@ -108,6 +108,7 @@ export declare class CRTFilter {
     imperfectSignalLocation: WebGLUniformLocation | null;
     humBarLocation: WebGLUniformLocation | null;
     channelSwitchLocation: WebGLUniformLocation | null;
+    channelSwitchIncomingLocation: WebGLUniformLocation | null;
     imageLocation: WebGLUniformLocation | null;
     bezelThicknessLocation: WebGLUniformLocation | null;
     reflexBarLocation: WebGLUniformLocation | null;
@@ -166,6 +167,7 @@ export declare class CRTFilter {
     private persistenceActive;
     private hasSourceFrame;
     private channelSwitchStartedAt;
+    private channelSwitchIncoming;
     private lumaProgram;
     private lumaTexture;
     private previousLumaTexture;
@@ -187,6 +189,7 @@ export declare class CRTFilter {
     clearPersistence(): void;
     isValid(): boolean;
     startChannelSwitch(): void;
+    joinChannelSwitch(): void;
     restartBreathing(): void;
     dispose(): void;
     render(sourceCanvas: HTMLCanvasElement, settings: CRTSettings, sourceChanged?: boolean): void;

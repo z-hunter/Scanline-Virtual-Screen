@@ -12,7 +12,10 @@ export class VirtualScreenRenderer {
 
   render(source: HTMLCanvasElement, settings: CRTSettings, overlays: readonly ScreenOverlay[] = [], sourceChanged = true): void {
     this.compositor.compose(source, overlays);
-    if (this.filter?.isValid()) this.filter.render(this.compositor.canvas, settings, sourceChanged);
+    if (this.filter?.isValid()) {
+      this.filter.render(this.compositor.canvas, settings, sourceChanged);
+      if (this.channelSwitchStartedAt !== null && performance.now() - this.channelSwitchStartedAt >= 420) this.channelSwitchStartedAt = null;
+    }
     else {
       const ctx = this.output.getContext('2d');
       if (!ctx) return;
@@ -31,8 +34,9 @@ export class VirtualScreenRenderer {
   clearPersistence(): void { this.filter?.clearPersistence(); }
   isChannelSwitchAnimating(): boolean { return this.channelSwitchStartedAt !== null; }
   startChannelSwitch(): void {
-    if (this.filter) this.filter.startChannelSwitch();
-    else this.channelSwitchStartedAt = performance.now();
+    this.channelSwitchStartedAt = performance.now();
+    this.filter?.startChannelSwitch();
   }
+  joinChannelSwitch(): void { this.filter?.joinChannelSwitch(); }
   dispose(): void { this.filter?.dispose(); this.filter = null; }
 }

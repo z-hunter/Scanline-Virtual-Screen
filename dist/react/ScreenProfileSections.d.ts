@@ -9,8 +9,9 @@ type ProfileSectionProps = {
     value: ScreenProfile;
     onChange: (value: ScreenProfile) => void;
 };
-export declare function DisplaySettingsSection({ value, modes, onChange }: ProfileSectionProps & {
+export declare function DisplaySettingsSection({ value, modes, onChange, showChannelSwitch }: ProfileSectionProps & {
     modes: readonly ScreenMode[];
+    showChannelSwitch?: boolean;
 }): import("react/jsx-runtime").JSX.Element;
 export declare function TerminalSettingsSection({ value, fonts, onChange, smoothScrolling }: ProfileSectionProps & {
     fonts: readonly string[];

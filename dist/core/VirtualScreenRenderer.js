@@ -12,8 +12,11 @@ export class VirtualScreenRenderer {
     }
     render(source, settings, overlays = [], sourceChanged = true) {
         this.compositor.compose(source, overlays);
-        if (this.filter?.isValid())
+        if (this.filter?.isValid()) {
             this.filter.render(this.compositor.canvas, settings, sourceChanged);
+            if (this.channelSwitchStartedAt !== null && performance.now() - this.channelSwitchStartedAt >= 420)
+                this.channelSwitchStartedAt = null;
+        }
         else {
             const ctx = this.output.getContext('2d');
             if (!ctx)
@@ -33,11 +36,10 @@ export class VirtualScreenRenderer {
     clearPersistence() { this.filter?.clearPersistence(); }
     isChannelSwitchAnimating() { return this.channelSwitchStartedAt !== null; }
     startChannelSwitch() {
-        if (this.filter)
-            this.filter.startChannelSwitch();
-        else
-            this.channelSwitchStartedAt = performance.now();
+        this.channelSwitchStartedAt = performance.now();
+        this.filter?.startChannelSwitch();
     }
+    joinChannelSwitch() { this.filter?.joinChannelSwitch(); }
     dispose() { this.filter?.dispose(); this.filter = null; }
 }
 //# sourceMappingURL=VirtualScreenRenderer.js.map

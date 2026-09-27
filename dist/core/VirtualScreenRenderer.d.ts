@@ -12,6 +12,7 @@ export declare class VirtualScreenRenderer {
     clearPersistence(): void;
     isChannelSwitchAnimating(): boolean;
     startChannelSwitch(): void;
+    joinChannelSwitch(): void;
     dispose(): void;
 }
 //# sourceMappingURL=VirtualScreenRenderer.d.ts.map
