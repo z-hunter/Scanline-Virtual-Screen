@@ -42,6 +42,9 @@ const PASSTHROUGH_FS = `
     vec2 p = uv * u_sourceResolution;
     vec2 edgeDistance = min(fract(p), 1.0 - fract(p));
     float boundaryRisk = max(step(edgeDistance.x, footprint.x * 0.5), step(edgeDistance.y, footprint.y * 0.5));
+    // The rotated grid has no valid neighbour beyond the source texture.
+    boundaryRisk *= step(footprint.x, p.x) * step(footprint.y, p.y)
+      * step(footprint.x, u_sourceResolution.x - p.x) * step(footprint.y, u_sourceResolution.y - p.y);
     #ifndef GL_OES_standard_derivatives
     vec2 dx = vec2(1.0 / u_resolution.x, 0.0);
     vec2 dy = vec2(0.0, 1.0 / u_resolution.y);
@@ -646,6 +649,9 @@ export class CRTFilter {
                  vec2 p = uv * u_sourceResolution;
                  vec2 edgeDistance = min(fract(p), 1.0 - fract(p));
                  float boundaryRisk = max(step(edgeDistance.x, footprint.x * 0.5), step(edgeDistance.y, footprint.y * 0.5));
+                 // The rotated grid has no valid neighbour beyond the source texture.
+                 boundaryRisk *= step(footprint.x, p.x) * step(footprint.y, p.y)
+                   * step(footprint.x, u_sourceResolution.x - p.x) * step(footprint.y, u_sourceResolution.y - p.y);
                  #ifndef GL_OES_standard_derivatives
                  vec2 dx = vec2(1.0 / u_resolution.x, 0.0);
                  vec2 dy = vec2(0.0, 1.0 / u_resolution.y);
