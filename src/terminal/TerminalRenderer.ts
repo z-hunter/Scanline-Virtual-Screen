@@ -141,6 +141,15 @@ export function accessibleTextColor(foreground: string, background: string): str
   return blackContrast >= whiteContrast ? '#000000' : '#ffffff';
 }
 
+export function binarizeTextPixels(pixels: Uint8ClampedArray, mask: Uint8ClampedArray): void {
+  for (let index = 3; index < mask.length; index += 4) if (mask[index] >= 128) {
+    pixels[index - 3] = mask[index - 3];
+    pixels[index - 2] = mask[index - 2];
+    pixels[index - 1] = mask[index - 1];
+    pixels[index] = 255;
+  }
+}
+
 function blendColor(background: string, foreground: string, alpha: number): string {
   const base = rgb(background); const overlay = rgb(foreground);
   return `#${base.map((channel, index) => Math.round(channel * (1 - alpha) + overlay[index] * alpha).toString(16).padStart(2, '0')).join('')}`;
@@ -187,6 +196,7 @@ export function terminalAverageLuma(terminal: Terminal, profile: TerminalColorPr
 
 export class TerminalRenderer {
   readonly sourceCanvas = document.createElement('canvas');
+  private readonly textCanvas = document.createElement('canvas');
   readonly compositedCanvas = document.createElement('canvas');
   private readonly scrollFromCanvas = document.createElement('canvas');
   private readonly scrollTargetCanvas = document.createElement('canvas');
@@ -209,6 +219,7 @@ export class TerminalRenderer {
   private lastCursorMoveTime = 0;
   private lastCursorX = -1;
   private lastCursorY = -1;
+  private lastTextBinarization = false;
   private cursorMoved = false;
   private scrollTransition: ScrollTransition | null = null;
   private scrollTargetReady = false;
@@ -223,7 +234,7 @@ export class TerminalRenderer {
     width = Math.max(1, Math.floor(width)); height = Math.max(1, Math.floor(height));
     this.cancelScroll();
     if (this.sourceCanvas.width === width && this.sourceCanvas.height === height) { this.markDirty(); return false; }
-    this.sourceCanvas.width = width; this.sourceCanvas.height = height; this.compositedCanvas.width = width; this.compositedCanvas.height = height; this.scrollFromCanvas.width = width; this.scrollFromCanvas.height = height; this.scrollTargetCanvas.width = width; this.scrollTargetCanvas.height = height; this.scrollFrameCanvas.width = width; this.scrollFrameCanvas.height = height; this.markDirty(); return true;
+    this.sourceCanvas.width = width; this.sourceCanvas.height = height; this.textCanvas.width = width; this.textCanvas.height = height; this.compositedCanvas.width = width; this.compositedCanvas.height = height; this.scrollFromCanvas.width = width; this.scrollFromCanvas.height = height; this.scrollTargetCanvas.width = width; this.scrollTargetCanvas.height = height; this.scrollFrameCanvas.width = width; this.scrollFrameCanvas.height = height; this.markDirty(); return true;
   }
   beginBufferScroll(fromViewportY: number, toViewportY: number): boolean {
     if (!this.terminal || fromViewportY === toViewportY || this.terminal.buffer.active !== this.terminal.buffer.normal) return false;
@@ -401,6 +412,7 @@ export class TerminalRenderer {
     const source = this.sourceCanvas; const terminal = this.terminal;
     if (!terminal) return false;
     const buffer = terminal.buffer.active;
+    if (this.lastTextBinarization !== settings.textBinarization) { this.lastTextBinarization = settings.textBinarization; this.markDirty(); }
     if (this.snapshotBuffer !== buffer) {
       this.cancelScroll();
       this.snapshotBuffer = buffer;
@@ -444,7 +456,9 @@ export class TerminalRenderer {
     ctx.globalAlpha = 1; ctx.fillStyle = profile.background; if (this.fullDirty) ctx.fillRect(0, 0, source.width, source.height); ctx.font = baseFont; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
     const cursorStyle = terminal.options.cursorStyle ?? settings.cursorStyle ?? 'block';
     const cursorColor = cursorStyle === 'block' ? brightenColor(profile.cursor ?? profile.foreground, settings.cursorBrightness ?? 0) : null;
-    for (const row of changedRows) this.drawRow(ctx, buffer.getLine(buffer.viewportY + row), row, terminal.cols, buffer.viewportY, cell, profile, offset, cellSize, baseFont, row === nextCursorRow ? cursorColor : null, buffer.cursorX);
+    const textCtx = settings.textBinarization ? this.textCanvas.getContext('2d', { willReadFrequently: true }) : null;
+    for (const row of changedRows) this.drawRow(ctx, textCtx, buffer.getLine(buffer.viewportY + row), row, terminal.cols, buffer.viewportY, cell, profile, offset, cellSize, baseFont, row === nextCursorRow ? cursorColor : null, buffer.cursorX);
+    if (textCtx) this.binarizeText(ctx, textCtx, changedRows, offset.y, cellSize.height);
     if (nextSignatures.length) { this.sourceLuma = terminalAverageLuma(terminal, profile, { width: source.width, height: source.height, cellWidth: cellSize.width, cellHeight: cellSize.height, padding: terminalPadding(source.width, source.height) }); this.hasMeasuredSourceLuma = true; }
     this.rowSignatures = nextSignatures.length ? nextSignatures : this.rowSignatures; this.cursorRow = nextCursorRow; this.lastCursorPhase = cursorPhase; this.dirty = false; this.fullDirty = false;
     if (this.scrollTransition) this.composeTerminal(this.scrollTargetCanvas); else this.composeTerminal(this.compositedCanvas);
@@ -518,14 +532,32 @@ export class TerminalRenderer {
     for (let column = 0; column < cols; column += 1) { const current = line.getCell(column, cell); if (!current) { signature += ';'; continue; } const chars = current.getChars(); const attributes = CELL_ATTRIBUTES.map((attribute) => Number(cellAttribute(current, attribute))).join(''); const colors = `${current.getFgColor()},${current.getBgColor()},${Number(current.isFgRGB())}${Number(current.isBgRGB())}${Number(current.isFgPalette())}${Number(current.isBgPalette())},${Number(current.isInverse())}`; signature += `${chars.length}:${chars},${current.getWidth()},${colors}${Number(current.isDim())}${attributes}${Number(current.isInvisible())};`; }
     return signature;
   }
-  private drawRow(ctx: CanvasRenderingContext2D, line: BufferLine | undefined, row: number, cols: number, viewportY: number, cell: IBufferCell, profile: TerminalColorProfile, offset: { x: number; y: number }, cellSize: { width: number; height: number }, baseFont: string, cursorColor: string | null, cursorColumn: number): void {
-    const y = offset.y + cellSize.height * (row + .5); ctx.globalAlpha = 1; ctx.fillStyle = profile.background; ctx.fillRect(0, Math.floor(y - cellSize.height / 2), this.sourceCanvas.width, Math.ceil(cellSize.height)); if (!line) return;
+  private binarizeText(source: CanvasRenderingContext2D, text: CanvasRenderingContext2D, rows: Set<number>, offsetY: number, rowHeight: number): void {
+    for (const row of rows) {
+      const top = Math.max(0, Math.floor(offsetY + row * rowHeight));
+      const height = Math.min(this.sourceCanvas.height - top, Math.ceil(rowHeight));
+      if (height <= 0) continue;
+      const mask = text.getImageData(0, top, this.sourceCanvas.width, height);
+      const pixels = source.getImageData(0, top, this.sourceCanvas.width, height);
+      binarizeTextPixels(pixels.data, mask.data);
+      source.putImageData(pixels, 0, top);
+    }
+  }
+  private drawRow(ctx: CanvasRenderingContext2D, textCtx: CanvasRenderingContext2D | null, line: BufferLine | undefined, row: number, cols: number, viewportY: number, cell: IBufferCell, profile: TerminalColorProfile, offset: { x: number; y: number }, cellSize: { width: number; height: number }, baseFont: string, cursorColor: string | null, cursorColumn: number): void {
+    const y = offset.y + cellSize.height * (row + .5); const rowTop = Math.floor(y - cellSize.height / 2); const rowHeight = Math.ceil(cellSize.height); ctx.globalAlpha = 1; ctx.fillStyle = profile.background; ctx.fillRect(0, rowTop, this.sourceCanvas.width, rowHeight); textCtx?.clearRect(0, rowTop, this.sourceCanvas.width, rowHeight); if (!line) return;
     const selectionStart = this.selection ? this.selection.start.row * cols + this.selection.start.column : -1; const selectionEnd = this.selection ? this.selection.end.row * cols + this.selection.end.column : -1;
     const lineTextHighlights = this.textHighlightsByLine.get(viewportY + row) ?? [];
     for (let column = 0; column < cols; column += 1) {
       const current = line.getCell(column, cell); if (!current || current.getWidth() === 0) continue; let fg = cellColor(current, true, profile); let bg = cellColor(current, false, profile); if (current.isInverse()) [fg, bg] = [bg, fg]; const x = offset.x + cellSize.width * column; const left = Math.floor(x); const top = Math.floor(y - cellSize.height / 2); const width = Math.ceil(cellSize.width * current.getWidth()); const height = Math.ceil(cellSize.height); if (bg !== profile.background) { ctx.globalAlpha = 1; ctx.fillStyle = bg; ctx.fillRect(left, top, width, height); } const point = (viewportY + row) * cols + column; if (this.selection && point >= Math.min(selectionStart, selectionEnd) && point <= Math.max(selectionStart, selectionEnd)) { ctx.globalAlpha = 1; ctx.fillStyle = 'rgba(125, 210, 255, 0.42)'; ctx.fillRect(left, top, width, height); } const highlightEntry = lineTextHighlights.find((entry) => column >= entry.range.startColumn && column < entry.range.endColumn); if (highlightEntry) { const highlightAlpha = highlightEntry.index === this.activeTextHighlight ? .78 : .34; ctx.globalAlpha = 1; ctx.fillStyle = highlightEntry.index === this.activeTextHighlight ? 'rgba(255, 208, 92, 0.78)' : 'rgba(255, 208, 92, 0.34)'; ctx.fillRect(left, top, width, height); fg = accessibleTextColor(fg, blendColor(bg, '#ffd05c', highlightAlpha)); } if (column === cursorColumn && cursorColor) { ctx.globalAlpha = 1; ctx.fillStyle = cursorColor; ctx.fillRect(left, top + 1, cellSize.width, Math.max(1, height - 2)); fg = accessibleTextColor(fg, cursorColor); } const chars = current.getChars(); const invisible = current.isInvisible(); const bold = cellAttribute(current, 'isBold'); const italic = cellAttribute(current, 'isItalic'); const underline = cellAttribute(current, 'isUnderline'); const strikethrough = cellAttribute(current, 'isStrikethrough'); const overline = cellAttribute(current, 'isOverline'); if (!invisible && (chars || underline || strikethrough || overline)) {
         ctx.globalAlpha = current.isDim() ? .6 : 1; ctx.fillStyle = fg; if (chars) { ctx.font = `${italic ? 'italic ' : ''}${bold ? 'bold ' : ''}${baseFont}`; }
-        if (chars) { if (!drawContinuousVertical(ctx, chars, x, top, cellSize)) ctx.fillText(chars, x, y, width); }
+        if (chars) {
+          if (!drawContinuousVertical(ctx, chars, x, top, cellSize)) {
+            if (textCtx) {
+              textCtx.globalAlpha = ctx.globalAlpha; textCtx.fillStyle = fg; textCtx.font = ctx.font; textCtx.textAlign = ctx.textAlign; textCtx.textBaseline = ctx.textBaseline;
+              textCtx.fillText(chars, x, y, width);
+            } else ctx.fillText(chars, x, y, width);
+          }
+        }
         if (overline) ctx.fillRect(left, top, width, 1);
         if (strikethrough) ctx.fillRect(left, top + Math.floor(height / 2), width, 1);
         if (underline) ctx.fillRect(left, top + height - 1, width, 1);

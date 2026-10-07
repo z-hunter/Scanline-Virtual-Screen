@@ -54,6 +54,7 @@ export interface CRTSettings {
     channelSwitchEffect: boolean;
     antiAliasedPixels: boolean;
     pixelSmoothing: boolean;
+    textBinarization: boolean;
     colorMode: CRTColorMode;
     maskType: CRTMaskType;
     maskStrength: number;

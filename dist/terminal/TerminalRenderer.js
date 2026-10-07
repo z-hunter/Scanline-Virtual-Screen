@@ -152,6 +152,15 @@ export function accessibleTextColor(foreground, background) {
     const whiteContrast = 1.05 / (backgroundLuma + .05);
     return blackContrast >= whiteContrast ? '#000000' : '#ffffff';
 }
+export function binarizeTextPixels(pixels, mask) {
+    for (let index = 3; index < mask.length; index += 4)
+        if (mask[index] >= 128) {
+            pixels[index - 3] = mask[index - 3];
+            pixels[index - 2] = mask[index - 2];
+            pixels[index - 1] = mask[index - 1];
+            pixels[index] = 255;
+        }
+}
 function blendColor(background, foreground, alpha) {
     const base = rgb(background);
     const overlay = rgb(foreground);
@@ -205,6 +214,7 @@ export function terminalAverageLuma(terminal, profile, frame) {
 }
 export class TerminalRenderer {
     sourceCanvas = document.createElement('canvas');
+    textCanvas = document.createElement('canvas');
     compositedCanvas = document.createElement('canvas');
     scrollFromCanvas = document.createElement('canvas');
     scrollTargetCanvas = document.createElement('canvas');
@@ -227,6 +237,7 @@ export class TerminalRenderer {
     lastCursorMoveTime = 0;
     lastCursorX = -1;
     lastCursorY = -1;
+    lastTextBinarization = false;
     cursorMoved = false;
     scrollTransition = null;
     scrollTargetReady = false;
@@ -261,6 +272,8 @@ export class TerminalRenderer {
         }
         this.sourceCanvas.width = width;
         this.sourceCanvas.height = height;
+        this.textCanvas.width = width;
+        this.textCanvas.height = height;
         this.compositedCanvas.width = width;
         this.compositedCanvas.height = height;
         this.scrollFromCanvas.width = width;
@@ -489,6 +502,10 @@ export class TerminalRenderer {
         if (!terminal)
             return false;
         const buffer = terminal.buffer.active;
+        if (this.lastTextBinarization !== settings.textBinarization) {
+            this.lastTextBinarization = settings.textBinarization;
+            this.markDirty();
+        }
         if (this.snapshotBuffer !== buffer) {
             this.cancelScroll();
             this.snapshotBuffer = buffer;
@@ -562,8 +579,11 @@ export class TerminalRenderer {
         ctx.textBaseline = 'middle';
         const cursorStyle = terminal.options.cursorStyle ?? settings.cursorStyle ?? 'block';
         const cursorColor = cursorStyle === 'block' ? brightenColor(profile.cursor ?? profile.foreground, settings.cursorBrightness ?? 0) : null;
+        const textCtx = settings.textBinarization ? this.textCanvas.getContext('2d', { willReadFrequently: true }) : null;
         for (const row of changedRows)
-            this.drawRow(ctx, buffer.getLine(buffer.viewportY + row), row, terminal.cols, buffer.viewportY, cell, profile, offset, cellSize, baseFont, row === nextCursorRow ? cursorColor : null, buffer.cursorX);
+            this.drawRow(ctx, textCtx, buffer.getLine(buffer.viewportY + row), row, terminal.cols, buffer.viewportY, cell, profile, offset, cellSize, baseFont, row === nextCursorRow ? cursorColor : null, buffer.cursorX);
+        if (textCtx)
+            this.binarizeText(ctx, textCtx, changedRows, offset.y, cellSize.height);
         if (nextSignatures.length) {
             this.sourceLuma = terminalAverageLuma(terminal, profile, { width: source.width, height: source.height, cellWidth: cellSize.width, cellHeight: cellSize.height, padding: terminalPadding(source.width, source.height) });
             this.hasMeasuredSourceLuma = true;
@@ -685,11 +705,26 @@ export class TerminalRenderer {
         }
         return signature;
     }
-    drawRow(ctx, line, row, cols, viewportY, cell, profile, offset, cellSize, baseFont, cursorColor, cursorColumn) {
+    binarizeText(source, text, rows, offsetY, rowHeight) {
+        for (const row of rows) {
+            const top = Math.max(0, Math.floor(offsetY + row * rowHeight));
+            const height = Math.min(this.sourceCanvas.height - top, Math.ceil(rowHeight));
+            if (height <= 0)
+                continue;
+            const mask = text.getImageData(0, top, this.sourceCanvas.width, height);
+            const pixels = source.getImageData(0, top, this.sourceCanvas.width, height);
+            binarizeTextPixels(pixels.data, mask.data);
+            source.putImageData(pixels, 0, top);
+        }
+    }
+    drawRow(ctx, textCtx, line, row, cols, viewportY, cell, profile, offset, cellSize, baseFont, cursorColor, cursorColumn) {
         const y = offset.y + cellSize.height * (row + .5);
+        const rowTop = Math.floor(y - cellSize.height / 2);
+        const rowHeight = Math.ceil(cellSize.height);
         ctx.globalAlpha = 1;
         ctx.fillStyle = profile.background;
-        ctx.fillRect(0, Math.floor(y - cellSize.height / 2), this.sourceCanvas.width, Math.ceil(cellSize.height));
+        ctx.fillRect(0, rowTop, this.sourceCanvas.width, rowHeight);
+        textCtx?.clearRect(0, rowTop, this.sourceCanvas.width, rowHeight);
         if (!line)
             return;
         const selectionStart = this.selection ? this.selection.start.row * cols + this.selection.start.column : -1;
@@ -747,8 +782,18 @@ export class TerminalRenderer {
                     ctx.font = `${italic ? 'italic ' : ''}${bold ? 'bold ' : ''}${baseFont}`;
                 }
                 if (chars) {
-                    if (!drawContinuousVertical(ctx, chars, x, top, cellSize))
-                        ctx.fillText(chars, x, y, width);
+                    if (!drawContinuousVertical(ctx, chars, x, top, cellSize)) {
+                        if (textCtx) {
+                            textCtx.globalAlpha = ctx.globalAlpha;
+                            textCtx.fillStyle = fg;
+                            textCtx.font = ctx.font;
+                            textCtx.textAlign = ctx.textAlign;
+                            textCtx.textBaseline = ctx.textBaseline;
+                            textCtx.fillText(chars, x, y, width);
+                        }
+                        else
+                            ctx.fillText(chars, x, y, width);
+                    }
                 }
                 if (overline)
                     ctx.fillRect(left, top, width, 1);

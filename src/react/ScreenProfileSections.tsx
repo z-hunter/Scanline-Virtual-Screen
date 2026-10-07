@@ -88,6 +88,7 @@ export function DisplaySettingsSection({ value, modes, onChange, showChannelSwit
       {modes.length > 1 && <label className="svs-field resolution-control">Virtual resolution<select value={value.virtualScreen.modeId} onChange={(event) => onChange({ ...value, virtualScreen: { modeId: event.target.value } })}>{modes.map((mode) => <option key={mode.id} value={mode.id}>{mode.label ?? mode.id}</option>)}</select></label>}
       <Switch label="Anti-moiré pixels" checked={value.crt.antiAliasedPixels} onChange={(antiAliasedPixels) => update({ antiAliasedPixels })} />
       <Switch label="Pixel smoothing" checked={value.crt.pixelSmoothing} onChange={(pixelSmoothing) => update({ pixelSmoothing })} />
+      <Switch label="Binary text" checked={value.crt.textBinarization} onChange={(textBinarization) => update({ textBinarization })} />
       {showChannelSwitch && <Switch label="Channel switch roll" checked={value.crt.channelSwitchEffect} onChange={(channelSwitchEffect) => update({ channelSwitchEffect })} />}
     </fieldset>
   );

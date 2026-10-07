@@ -46,9 +46,11 @@ export declare function terminalContentOffset(width: number, height: number, col
     y: number;
 };
 export declare function accessibleTextColor(foreground: string, background: string): string;
+export declare function binarizeTextPixels(pixels: Uint8ClampedArray, mask: Uint8ClampedArray): void;
 export declare function terminalAverageLuma(terminal: Terminal, profile: TerminalColorProfile, frame?: LumaFrame): number;
 export declare class TerminalRenderer {
     readonly sourceCanvas: HTMLCanvasElement;
+    private readonly textCanvas;
     readonly compositedCanvas: HTMLCanvasElement;
     private readonly scrollFromCanvas;
     private readonly scrollTargetCanvas;
@@ -71,6 +73,7 @@ export declare class TerminalRenderer {
     private lastCursorMoveTime;
     private lastCursorX;
     private lastCursorY;
+    private lastTextBinarization;
     private cursorMoved;
     private scrollTransition;
     private scrollTargetReady;
@@ -120,6 +123,7 @@ export declare class TerminalRenderer {
     private renderScroll;
     private lineHeight;
     private rowSignature;
+    private binarizeText;
     private drawRow;
     dispose(): void;
 }

@@ -129,6 +129,7 @@ export interface CRTSettings {
   channelSwitchEffect: boolean; // Brief vertical roll when changing source/channel
   antiAliasedPixels: boolean; // Independent output-space anti-moiré resolve
   pixelSmoothing: boolean; // Linear filtering of source pixels
+  textBinarization: boolean; // Threshold Canvas text coverage before CRT composition
   colorMode: CRTColorMode;
   maskType: CRTMaskType;
   maskStrength: number;
