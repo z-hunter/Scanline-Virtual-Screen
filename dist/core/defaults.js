@@ -41,7 +41,6 @@ export const DEFAULT_CRT_SETTINGS = Object.freeze({
     channelSwitchEffect: true,
     antiAliasedPixels: true,
     pixelSmoothing: true,
-    textBinarization: false,
     colorMode: 'color',
     maskType: 'off',
     maskStrength: 0.3,
