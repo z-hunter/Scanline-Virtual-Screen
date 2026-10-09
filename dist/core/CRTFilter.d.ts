@@ -11,7 +11,7 @@ export declare function persistenceDecay(persistence: number, elapsedSeconds: nu
 export declare function phosphorMaskScale(width: number): number;
 export declare function breathingExpansion(luma: number, strength: number): number;
 export declare function channelSwitchProgress(startedAt: number, now: number): number;
-export declare function glowBlurParameters(glowRadius: number, sourceWidth?: number, sourceHeight?: number): {
+export declare function glowBlurParameters(glowRadius: number): {
     passPairs: number;
     spread: number;
 };
@@ -164,7 +164,6 @@ export declare class CRTFilter {
     glowTexB: WebGLTexture | null;
     glowWidth: number;
     glowHeight: number;
-    glowResolutionScale: number;
     private crtVsSource;
     private crtFsSource;
     private crtEffectMask;
