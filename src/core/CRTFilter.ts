@@ -93,7 +93,7 @@ export function glowBlurParameters(
 ): { passPairs: number; spread: number } {
   const radius = Math.max(1, Number.isFinite(glowRadius) ? glowRadius : 1);
   const resolutionScale = Math.sqrt(Math.max(1, (sourceWidth * sourceHeight) / (420 * 300)));
-  const highResolutionRangeBoost = resolutionScale > 1 ? 1 + (radius - 1) / 5 : 1;
+  const highResolutionRangeBoost = resolutionScale > 1 ? 1 + (radius - 1) * 3 / 5 : 1;
   // Three small passes keep the separable kernel continuous without making the minimum radius wide.
   return {
     passPairs: Math.max(3, Math.ceil(radius)),

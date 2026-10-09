@@ -38,7 +38,7 @@ describe('CRT helpers', () => {
     expect(glowBlurParameters(1)).toEqual({ passPairs: 3, spread: 0.75 });
     expect(glowBlurParameters(6)).toEqual({ passPairs: 6, spread: 2 });
     expect(glowBlurParameters(6, 1024, 768)).toMatchObject({ passPairs: 6 });
-    expect(glowBlurParameters(6, 1024, 768).spread).toBeCloseTo(10, 1);
+    expect(glowBlurParameters(6, 1024, 768).spread).toBeCloseTo(20, 1);
   });
 
   it('keeps default CRT parameters without the removed hum setting', () => {
