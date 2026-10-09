@@ -34,9 +34,9 @@ describe('CRT helpers', () => {
     expect(channelSwitchProgress(100, 520)).toBe(1);
   });
 
-  it('keeps the minimum Glow tight while preserving a wider high-radius blur', () => {
-    expect(glowBlurParameters(1)).toEqual({ passPairs: 1, spread: 1.5 });
-    expect(glowBlurParameters(6)).toEqual({ passPairs: 6, spread: 4 });
+  it('keeps the minimum Glow continuous without making it wide', () => {
+    expect(glowBlurParameters(1)).toEqual({ passPairs: 3, spread: 0.75 });
+    expect(glowBlurParameters(6)).toEqual({ passPairs: 6, spread: 2 });
   });
 
   it('keeps default CRT parameters without the removed hum setting', () => {
