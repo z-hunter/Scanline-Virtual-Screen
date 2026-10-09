@@ -86,6 +86,11 @@ export function channelSwitchProgress(startedAt: number, now: number): number {
   return t * t * (3 - 2 * t);
 }
 
+export function glowBlurParameters(glowRadius: number): { passPairs: number; spread: number } {
+  const radius = Math.max(1, Number.isFinite(glowRadius) ? glowRadius : 1);
+  return { passPairs: Math.ceil(radius), spread: 1 + radius * 0.5 };
+}
+
 export interface CRTSettings {
   crtEmulation: boolean;
   colorProfile: ColorProfileId;
@@ -248,7 +253,7 @@ export class CRTFilter {
   glowTexB: WebGLTexture | null = null;
   glowWidth: number = 0;
   glowHeight: number = 0;
-  glowResolutionScale: number = 0.5;
+  glowResolutionScale: number = 1;
   private crtVsSource = '';
   private crtFsSource = '';
   private crtEffectMask = Number.NaN;
@@ -1339,12 +1344,18 @@ export class CRTFilter {
     this.glowWidth = width;
     this.glowHeight = height;
 
+    const halfFloat = gl.getExtension('OES_texture_half_float');
+    const useHalfFloat = !!halfFloat
+      && !!gl.getExtension('OES_texture_half_float_linear')
+      && !!gl.getExtension('EXT_color_buffer_half_float');
+    const textureType = useHalfFloat ? halfFloat.HALF_FLOAT_OES : gl.UNSIGNED_BYTE;
+
     const createTarget = () => {
       const texture = gl.createTexture();
       const framebuffer = gl.createFramebuffer();
       if (!texture || !framebuffer) return null;
       gl.bindTexture(gl.TEXTURE_2D, texture);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, textureType, null);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -1530,9 +1541,7 @@ export class CRTFilter {
     const persistenceEnergy = settings.persistenceEnergy ?? 0.09;
     const bloom = settings.bloom || 0.0;
     const glow = settings.glow || 0.0;
-    const glowRadius = settings.glowRadius ?? 3.0;
-    const glowPassPairs = Math.max(3, Math.ceil(glowRadius));
-    const glowSpread = 1.25 + glowRadius * 0.125;
+    const { passPairs: glowPassPairs, spread: glowSpread } = glowBlurParameters(settings.glowRadius ?? 3.0);
     const ambientGlassLight = settings.ambientGlassLight || 0.0;
     const bezelHighlight = settings.bezelHighlight || 0.0;
     const bezelReflection = settings.bezelGlow && settings.bezelGlowMode === 'reflection';

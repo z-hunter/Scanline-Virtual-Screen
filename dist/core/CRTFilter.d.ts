@@ -11,6 +11,10 @@ export declare function persistenceDecay(persistence: number, elapsedSeconds: nu
 export declare function phosphorMaskScale(width: number): number;
 export declare function breathingExpansion(luma: number, strength: number): number;
 export declare function channelSwitchProgress(startedAt: number, now: number): number;
+export declare function glowBlurParameters(glowRadius: number): {
+    passPairs: number;
+    spread: number;
+};
 export interface CRTSettings {
     crtEmulation: boolean;
     colorProfile: ColorProfileId;
