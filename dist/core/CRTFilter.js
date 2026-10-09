@@ -73,10 +73,11 @@ export function channelSwitchProgress(startedAt, now) {
     const t = Math.min(1, Math.max(0, (now - startedAt) / 420));
     return t * t * (3 - 2 * t);
 }
-export function glowBlurParameters(glowRadius) {
+export function glowBlurParameters(glowRadius, sourceWidth = 420, sourceHeight = 300) {
     const radius = Math.max(1, Number.isFinite(glowRadius) ? glowRadius : 1);
+    const resolutionScale = Math.sqrt(Math.max(1, (sourceWidth * sourceHeight) / (420 * 300)));
     // Three small passes keep the separable kernel continuous without making the minimum radius wide.
-    return { passPairs: Math.max(3, Math.ceil(radius)), spread: 0.5 + radius * 0.25 };
+    return { passPairs: Math.max(3, Math.ceil(radius)), spread: (0.5 + radius * 0.25) * resolutionScale };
 }
 export function crtEffectMask(settings) {
     const reflection = settings.bezelGlow && settings.bezelGlowMode === 'reflection';
@@ -1471,7 +1472,7 @@ export class CRTFilter {
         const persistenceEnergy = settings.persistenceEnergy ?? 0.09;
         const bloom = settings.bloom || 0.0;
         const glow = settings.glow || 0.0;
-        const { passPairs: glowPassPairs, spread: glowSpread } = glowBlurParameters(settings.glowRadius ?? 3.0);
+        const { passPairs: glowPassPairs, spread: glowSpread } = glowBlurParameters(settings.glowRadius ?? 3.0, sourceCanvas.width, sourceCanvas.height);
         const ambientGlassLight = settings.ambientGlassLight || 0.0;
         const bezelHighlight = settings.bezelHighlight || 0.0;
         const bezelReflection = settings.bezelGlow && settings.bezelGlowMode === 'reflection';
