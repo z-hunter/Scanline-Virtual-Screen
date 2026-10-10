@@ -947,7 +947,8 @@ export class CRTFilter {
                 // CRT Ambient Screen Glow (wide blur of the complete screen image, like light scattered in thick faceplate glass)
                 #if ENABLE_GLOW
                 if (u_glow > 0.0) {
-                     vec3 glowSum = texture2D(u_glowTexture, rasterUV).rgb;
+                     // The output-space Glow FBO has one extra render pass relative to the source texture.
+                     vec3 glowSum = texture2D(u_glowTexture, vec2(rasterUV.x, 1.0 - rasterUV.y)).rgb;
                      float glowInBounds = step(0.0, rasterUV.x) * step(rasterUV.x, 1.0)
                          * step(0.0, rasterUV.y) * step(rasterUV.y, 1.0);
                      glowSum *= glowInBounds;
