@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { breathingExpansion, channelSwitchProgress, CRTFilter, crtEffectMask, glowBlurParameters, persistenceDecay, phosphorMaskScale } from '../src/core/CRTFilter.js';
+import { breathingExpansion, channelSwitchProgress, CRTFilter, crtEffectMask, glowBlurParameters, glowBufferSize, persistenceDecay, phosphorMaskScale } from '../src/core/CRTFilter.js';
 import { DEFAULT_CRT_SETTINGS } from '../src/core/defaults.js';
 
 describe('CRT helpers', () => {
@@ -38,6 +38,12 @@ describe('CRT helpers', () => {
     expect(glowBlurParameters(1)).toEqual({ passPairs: 3, spread: 0.75 });
     expect(glowBlurParameters(6)).toEqual({ passPairs: 6, spread: 2 });
     expect(glowBlurParameters(24)).toEqual({ passPairs: 8, spread: 8 });
+  });
+
+  it('uses half-resolution textures only for Glow', () => {
+    expect(glowBufferSize(1024, 768)).toEqual({ width: 512, height: 384 });
+    expect(glowBufferSize(420, 300)).toEqual({ width: 210, height: 150 });
+    expect(glowBufferSize(1, 1)).toEqual({ width: 1, height: 1 });
   });
 
   it('keeps default CRT parameters without the removed hum setting', () => {

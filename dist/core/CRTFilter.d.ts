@@ -15,6 +15,10 @@ export declare function glowBlurParameters(glowRadius: number): {
     passPairs: number;
     spread: number;
 };
+export declare function glowBufferSize(width: number, height: number): {
+    width: number;
+    height: number;
+};
 export interface CRTSettings {
     crtEmulation: boolean;
     colorProfile: ColorProfileId;
@@ -162,6 +166,8 @@ export declare class CRTFilter {
     bloomTexB: WebGLTexture | null;
     glowTexA: WebGLTexture | null;
     glowTexB: WebGLTexture | null;
+    bloomWidth: number;
+    bloomHeight: number;
     glowWidth: number;
     glowHeight: number;
     private crtVsSource;
@@ -188,7 +194,7 @@ export declare class CRTFilter {
     init(): void;
     ensureFBO(width: number, height: number): boolean;
     ensureGlowFBO(width: number, height: number): boolean;
-    blur(input: WebGLTexture, inputWidth: number, inputHeight: number, target: WebGLFramebuffer, directionX: number, directionY: number, threshold: number, spread: number): void;
+    blur(input: WebGLTexture, inputWidth: number, inputHeight: number, target: WebGLFramebuffer, targetWidth: number, targetHeight: number, directionX: number, directionY: number, threshold: number, spread: number): void;
     clearPersistence(): void;
     isValid(): boolean;
     startChannelSwitch(): void;

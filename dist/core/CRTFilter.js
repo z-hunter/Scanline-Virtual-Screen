@@ -80,6 +80,9 @@ export function glowBlurParameters(glowRadius) {
     const spread = radius <= 6 ? 0.5 + radius * 0.25 : 2 + (radius - 6) / 3;
     return { passPairs: Math.max(3, Math.min(8, Math.ceil(radius))), spread };
 }
+export function glowBufferSize(width, height) {
+    return { width: Math.max(1, Math.ceil(width / 2)), height: Math.max(1, Math.ceil(height / 2)) };
+}
 export function crtEffectMask(settings) {
     const reflection = settings.bezelGlow && settings.bezelGlowMode === 'reflection';
     const reflexOn = (settings.reflexBarEnabled ?? ((settings.reflexBar ?? 0) > 0)) && (settings.reflexBar ?? 0) > 0;
@@ -183,6 +186,8 @@ export class CRTFilter {
     bloomTexB = null;
     glowTexA = null;
     glowTexB = null;
+    bloomWidth = 0;
+    bloomHeight = 0;
     glowWidth = 0;
     glowHeight = 0;
     crtVsSource = '';
@@ -1256,7 +1261,8 @@ export class CRTFilter {
         if (!this.gl)
             return false;
         const gl = this.gl;
-        if (this.bloomFboA && this.glowWidth === width && this.glowHeight === height)
+        const { width: glowWidth, height: glowHeight } = glowBufferSize(width, height);
+        if (this.bloomFboA && this.bloomWidth === width && this.bloomHeight === height && this.glowWidth === glowWidth && this.glowHeight === glowHeight)
             return true;
         for (const fbo of [this.bloomFboA, this.bloomFboB, this.glowFboA, this.glowFboB]) {
             if (fbo)
@@ -1266,20 +1272,22 @@ export class CRTFilter {
             if (tex)
                 gl.deleteTexture(tex);
         }
-        this.glowWidth = width;
-        this.glowHeight = height;
+        this.bloomWidth = width;
+        this.bloomHeight = height;
+        this.glowWidth = glowWidth;
+        this.glowHeight = glowHeight;
         const halfFloat = gl.getExtension('OES_texture_half_float');
         const useHalfFloat = !!halfFloat
             && !!gl.getExtension('OES_texture_half_float_linear')
             && !!gl.getExtension('EXT_color_buffer_half_float');
         const textureType = useHalfFloat ? halfFloat.HALF_FLOAT_OES : gl.UNSIGNED_BYTE;
-        const createTarget = () => {
+        const createTarget = (targetWidth, targetHeight) => {
             const texture = gl.createTexture();
             const framebuffer = gl.createFramebuffer();
             if (!texture || !framebuffer)
                 return null;
             gl.bindTexture(gl.TEXTURE_2D, texture);
-            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, textureType, null);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, targetWidth, targetHeight, 0, gl.RGBA, textureType, null);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
             gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -1288,7 +1296,7 @@ export class CRTFilter {
             gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, texture, 0);
             return { framebuffer, texture };
         };
-        const targets = [createTarget(), createTarget(), createTarget(), createTarget()];
+        const targets = [createTarget(width, height), createTarget(width, height), createTarget(glowWidth, glowHeight), createTarget(glowWidth, glowHeight)];
         if (targets.some((target) => !target))
             return false;
         const [bloomA, bloomB, glowA, glowB] = targets;
@@ -1303,12 +1311,12 @@ export class CRTFilter {
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
         return true;
     }
-    blur(input, inputWidth, inputHeight, target, directionX, directionY, threshold, spread) {
+    blur(input, inputWidth, inputHeight, target, targetWidth, targetHeight, directionX, directionY, threshold, spread) {
         if (!this.gl || !this.blurProgram || !this.buffer)
             return;
         const gl = this.gl;
         gl.bindFramebuffer(gl.FRAMEBUFFER, target);
-        gl.viewport(0, 0, this.glowWidth, this.glowHeight);
+        gl.viewport(0, 0, targetWidth, targetHeight);
         gl.useProgram(this.blurProgram);
         gl.enableVertexAttribArray(this.blurPosLocation);
         gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
@@ -1567,19 +1575,20 @@ export class CRTFilter {
             const height = Math.max(1, this.canvas.height);
             if (this.ensureGlowFBO(width, height) && this.bloomFboA && this.bloomFboB && this.bloomTexA && this.bloomTexB) {
                 if (!legacyBloom && bloom > 0.0) {
-                    this.blur(this.texture, sourceCanvas.width, sourceCanvas.height, this.bloomFboA, 1, 0, 0.55, 1);
-                    this.blur(this.bloomTexA, width, height, this.bloomFboB, 0, 1, 0.0, 1);
+                    this.blur(this.texture, sourceCanvas.width, sourceCanvas.height, this.bloomFboA, width, height, 1, 0, 0.55, 1);
+                    this.blur(this.bloomTexA, width, height, this.bloomFboB, width, height, 0, 1, 0.0, 1);
                     bloomTexture = this.bloomTexB;
                 }
                 if ((glow > 0.0 || bezelReflection) && this.glowFboA && this.glowFboB && this.glowTexA && this.glowTexB) {
                     // Repeat a dense, small Gaussian kernel instead of separating a few samples so
                     // a wide glow remains continuous rather than turning into copied glyphs.
                     // Keep dark profile backgrounds out of the Glow source; only image pixels should emit light.
-                    // Resample the source once, then blur exclusively in output pixels so the radius is independent of virtual resolution.
-                    this.blur(this.texture, sourceCanvas.width, sourceCanvas.height, this.glowFboA, 0, 0, 0.08, 0);
+                    // Resample once; scaling the kernel keeps the output-pixel radius unchanged.
+                    this.blur(this.texture, sourceCanvas.width, sourceCanvas.height, this.glowFboA, this.glowWidth, this.glowHeight, 0, 0, 0.08, 0);
+                    const halfResolutionSpread = glowSpread * this.glowWidth / width;
                     for (let pair = 0; pair < glowPassPairs; pair += 1) {
-                        this.blur(this.glowTexA, width, height, this.glowFboB, 1, 0, 0.0, glowSpread);
-                        this.blur(this.glowTexB, width, height, this.glowFboA, 0, 1, 0.0, glowSpread);
+                        this.blur(this.glowTexA, this.glowWidth, this.glowHeight, this.glowFboB, this.glowWidth, this.glowHeight, 1, 0, 0.0, halfResolutionSpread);
+                        this.blur(this.glowTexB, this.glowWidth, this.glowHeight, this.glowFboA, this.glowWidth, this.glowHeight, 0, 1, 0.0, halfResolutionSpread);
                     }
                     glowTexture = this.glowTexA;
                 }
