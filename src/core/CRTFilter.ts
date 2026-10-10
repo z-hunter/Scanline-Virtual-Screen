@@ -53,7 +53,7 @@ const PASSTHROUGH_FS = `
     resolved += sampleScreen(uv + dx * 0.125 + dy * -0.375);
     resolved += sampleScreen(uv + dx * 0.375 + dy * 0.125);
     resolved += sampleScreen(uv + dx * -0.125 + dy * 0.375);
-    return mix(center, resolved * 0.25, boundaryRisk);
+    return mix(center, resolved * 0.25, boundaryRisk * 0.75);
   }
 
   void main() {
@@ -673,7 +673,7 @@ export class CRTFilter {
                  resolved += sampleScreen(uv + dx * 0.125 + dy * -0.375);
                  resolved += sampleScreen(uv + dx * 0.375 + dy * 0.125);
                  resolved += sampleScreen(uv + dx * -0.125 + dy * 0.375);
-                 return mix(center, resolved * 0.25, boundaryRisk);
+                 return mix(center, resolved * 0.25, boundaryRisk * 0.75);
              }
 
              vec3 applyColorMode(vec3 value) {
