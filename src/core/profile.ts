@@ -94,7 +94,7 @@ function integerValue(value: unknown, fallback: number, min: number, max: number
 
 const ranges: Record<string, [number, number]> = {
   curvature: [0, .5], scanlineCount: [0, 768], scanlineIntensity: [0, 1], aberration: [0, 5], aberrationFalloff: [1, 4],
-  vignette: [0, 1], phosphor: [0, 1], bloom: [0, 1], glow: [0, 2], glowRadius: [1, 6], persistence: [0, 1],
+  vignette: [0, 1], phosphor: [0, 1], bloom: [0, 1], glow: [0, 2], glowRadius: [1, 24], persistence: [0, 1],
   persistenceEnergy: [0, .5], persistenceIntensity: [0, 4], imageBrightness: [.5, 1.5], imageContrast: [.5, 1.5],
   backgroundDesaturation: [0, 1], beamModulation: [0, 1], breathing: [0, 1], ambientGlassLight: [0, 1], bezelHighlight: [0, 1],
   bezelThickness: [0, 10], reflexBar: [0, 1], reflexBarPosY: [0, .5], reflexBarWidth: [.95, 1], reflexBarHeight: [.05, .6],

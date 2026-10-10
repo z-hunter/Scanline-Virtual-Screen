@@ -89,7 +89,8 @@ export function channelSwitchProgress(startedAt: number, now: number): number {
 export function glowBlurParameters(glowRadius: number): { passPairs: number; spread: number } {
   const radius = Math.max(1, Number.isFinite(glowRadius) ? glowRadius : 1);
   // Three small passes keep the separable kernel continuous without making the minimum radius wide.
-  return { passPairs: Math.max(3, Math.ceil(radius)), spread: 0.5 + radius * 0.25 };
+  // Cap wide radii to avoid making the GPU cost grow linearly with the UI range.
+  return { passPairs: Math.max(3, Math.min(8, Math.ceil(radius))), spread: 0.5 + radius * 0.25 };
 }
 
 export interface CRTSettings {
@@ -113,7 +114,7 @@ export interface CRTSettings {
   bloom: number; // 0.0 to 1.0 (Halation intensity)
   bloomAlgorithm: BloomAlgorithm;
   glow: number; // 0.0 to 2.0 (Ambient screen glow)
-  glowRadius: number; // 1.0 to 6.0 (Wide glow radius)
+  glowRadius: number; // 1.0 to 24.0 (Wide glow radius)
   persistence: number; // 0.0 to 1.0 (Phosphor trail / afterglow)
   persistenceEnergy: number; // 0.0 to 0.5 (Initial energy of extinguished phosphors)
   persistenceIntensity: number; // 0.0 to 4.0 (Visible phosphor trail intensity)

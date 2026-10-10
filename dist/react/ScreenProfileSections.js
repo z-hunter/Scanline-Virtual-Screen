@@ -21,7 +21,7 @@ const controls = {
     Light: [
         { key: 'bloom', label: 'Bloom', min: 0, max: 1, step: 0.05 },
         { key: 'glow', label: 'Screen glow', min: 0, max: 2, step: 0.05 },
-        { key: 'glowRadius', label: 'Glow radius', min: 1, max: 6, step: 0.25 },
+        { key: 'glowRadius', label: 'Glow radius', min: 1, max: 24, step: 0.25 },
         { key: 'ambientGlassLight', label: 'Ambient glass light', min: 0, max: 1, step: 0.05 },
     ],
     Temporal: [
