@@ -89,8 +89,9 @@ export function channelSwitchProgress(startedAt: number, now: number): number {
 export function glowBlurParameters(glowRadius: number): { passPairs: number; spread: number } {
   const radius = Math.max(1, Number.isFinite(glowRadius) ? glowRadius : 1);
   // Three small passes keep the separable kernel continuous without making the minimum radius wide.
-  // Cap wide radii to avoid making the GPU cost grow linearly with the UI range.
-  return { passPairs: Math.max(3, Math.min(8, Math.ceil(radius))), spread: 0.5 + radius * 0.25 };
+  // Preserve the original scale through 6, then widen the kernel without growing GPU cost linearly.
+  const spread = radius <= 6 ? 0.5 + radius * 0.25 : 2 + (radius - 6) / 3;
+  return { passPairs: Math.max(3, Math.min(8, Math.ceil(radius))), spread };
 }
 
 export interface CRTSettings {
