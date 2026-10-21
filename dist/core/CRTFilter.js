@@ -679,8 +679,10 @@ export class CRTFilter {
                  if (u_crtEmulation < 0.5) {
                      vec2 imageUV = v_texCoord;
                      #if ENABLE_CHANNEL_SWITCH
-                     float rollPeriod = mix(1.18, 1.0, u_channelSwitchIncoming);
-                     imageUV.y = mod(imageUV.y + u_channelSwitch * rollPeriod, rollPeriod);
+                     if (u_channelSwitch > 0.0 && u_channelSwitch < 1.0) {
+                         float rollPeriod = mix(1.18, 1.0, u_channelSwitchIncoming);
+                         imageUV.y = mod(imageUV.y + u_channelSwitch * rollPeriod, rollPeriod);
+                     }
                      #endif
                      vec3 imageColor = texture2D(u_image, imageUV).rgb * step(imageUV.y, 1.0);
                      imageColor = (imageColor - 0.5) * u_imageContrast + 0.5;
@@ -814,10 +816,11 @@ export class CRTFilter {
                 #endif
 
                 #if ENABLE_CHANNEL_SWITCH
-                // The blank interval separates consecutive copies of the raster,
-                // so the top cannot wrap into the bottom while the raster breathes.
-                float rollPeriod = mix(1.18, 1.0, u_channelSwitchIncoming);
-                rasterUV.y = mod(rasterUV.y + u_channelSwitch * rollPeriod, rollPeriod);
+                // Only an active roll may wrap the raster; idle breathing must clip at the edges.
+                if (u_channelSwitch > 0.0 && u_channelSwitch < 1.0) {
+                    float rollPeriod = mix(1.18, 1.0, u_channelSwitchIncoming);
+                    rasterUV.y = mod(rasterUV.y + u_channelSwitch * rollPeriod, rollPeriod);
+                }
                 #endif
 
                 // Symmetric edge misconvergence: red appears outward, blue inward.
