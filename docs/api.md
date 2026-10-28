@@ -75,5 +75,6 @@ All React sections are controlled. They receive current host state and emit whol
 - `AdvancedCRTSettingsSection({ value, onChange })` — the complete CRT panel; `CRTSettingsSection` remains its compatibility alias.
 - `PresetSettingsSection({ value, names, disabled?, onNameChange, onLoad, onSave })`
 - `Knob`, `Switch`, `SegmentedControl`, and `formatValue` for a host's adjacent settings.
+- `SETTING_HELP` maps the visible setting labels to short descriptions so hosts can show consistent help tooltips.
 
 Import `scanline-virtual-screen/react/styles.css` when the host wants the supplied base styles. The three screen sections are independent fieldsets, so a nonterminal host can mount only Display and CRT.
