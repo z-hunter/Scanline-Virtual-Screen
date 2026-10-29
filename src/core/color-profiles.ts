@@ -1,15 +1,17 @@
 export const COLOR_PROFILE_IDS = ['dos-vga', 'windows-legacy', 'windows-campbell', 'xterm-x11', 'solarized-dark', 'ibm-3279', 'commodore-64', 'commodore-128', 'cyberpunk', 'chalkbox', 'inverted'] as const;
 
-export type ColorProfileId = (typeof COLOR_PROFILE_IDS)[number];
+export type ColorProfileId = (typeof COLOR_PROFILE_IDS)[number] | `lua:${string}`;
 
-export type TerminalColorProfile = {
+export type TerminalColorProfile = Readonly<{
   id: ColorProfileId;
   label: string;
   foreground: string;
   background: string;
   cursor?: string;
-  colors: string[];
-};
+  colors: readonly string[];
+}>;
+
+const customProfileId = /^lua:[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
 const xtermCube = (): string[] => {
   const colors: string[] = [];
@@ -76,14 +78,41 @@ const profiles: TerminalColorProfile[] = [
 
 export const DEFAULT_COLOR_PROFILE_ID: ColorProfileId = 'dos-vga';
 
-export const COLOR_PROFILES = profiles;
+function immutableProfile(profile: TerminalColorProfile): TerminalColorProfile {
+  return Object.freeze({ ...profile, colors: Object.freeze([...profile.colors]) });
+}
+
+export const COLOR_PROFILES: readonly TerminalColorProfile[] = Object.freeze(profiles.map(immutableProfile));
+let customProfiles: readonly TerminalColorProfile[] = Object.freeze([]);
+let customById = new Map<string, TerminalColorProfile>();
 
 export function isColorProfile(value: unknown): value is ColorProfileId {
-  return typeof value === 'string' && COLOR_PROFILE_IDS.includes(value as ColorProfileId);
+  return typeof value === 'string' && (COLOR_PROFILE_IDS.includes(value as (typeof COLOR_PROFILE_IDS)[number]) || customProfileId.test(value));
 }
 
 export function colorProfile(id: ColorProfileId): TerminalColorProfile {
-  return COLOR_PROFILES.find((profile) => profile.id === id) ?? COLOR_PROFILES[1];
+  return customById.get(id) ?? COLOR_PROFILES.find((profile) => profile.id === id) ?? COLOR_PROFILES[1];
+}
+
+export function replaceCustomColorProfiles(profiles: readonly TerminalColorProfile[]): void {
+  const next = new Map<string, TerminalColorProfile>();
+  for (const profile of profiles) {
+    if (!profile || !customProfileId.test(profile.id) || COLOR_PROFILE_IDS.includes(profile.id as (typeof COLOR_PROFILE_IDS)[number]) ||
+      next.has(profile.id) || typeof profile.label !== 'string' || !profile.label.trim() ||
+      !/^#[\da-f]{6}$/i.test(profile.foreground) || !/^#[\da-f]{6}$/i.test(profile.background) ||
+      (profile.cursor !== undefined && !/^#[\da-f]{6}$/i.test(profile.cursor)) ||
+      !Array.isArray(profile.colors) || (profile.colors.length !== 16 && profile.colors.length !== 256) ||
+      profile.colors.some((color) => typeof color !== 'string' || !/^#[\da-f]{6}$/i.test(color))) {
+      throw new TypeError('Invalid custom color profile');
+    }
+    next.set(profile.id, immutableProfile(profile));
+  }
+  customById = next;
+  customProfiles = Object.freeze([...next.values()]);
+}
+
+export function getCustomColorProfiles(): readonly TerminalColorProfile[] {
+  return Object.freeze(customProfiles.map(immutableProfile));
 }
 
 export function profileColor(profile: TerminalColorProfile, index: number): string {

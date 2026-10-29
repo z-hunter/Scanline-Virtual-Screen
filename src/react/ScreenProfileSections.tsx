@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useState } from 'react';
 import type { BezelGlowMode, BloomAlgorithm, CRTColorMode, CRTMaskType } from '../core/CRTFilter.js';
 import type { ColorProfileId } from '../core/color-profiles.js';
-import { COLOR_PROFILES } from '../core/color-profiles.js';
+import { COLOR_PROFILES, getCustomColorProfiles } from '../core/color-profiles.js';
 import type { CRTVisualSettings, ScreenMode, ScreenProfile, TerminalSettings } from '../core/profile.js';
 import { Knob, formatValue } from './Knob.js';
 import { SegmentedControl, Switch } from './Controls.js';
@@ -95,6 +95,7 @@ export function DisplaySettingsSection({ value, modes, onChange, showChannelSwit
 
 export function TerminalSettingsSection({ value, fonts, onChange, smoothScrolling }: ProfileSectionProps & { fonts: readonly string[]; smoothScrolling?: SmoothScrollingSettings }) {
   const update = (patch: Partial<TerminalSettings>) => onChange({ ...value, terminal: { ...value.terminal, ...patch } });
+  const customProfiles = getCustomColorProfiles();
   const [fontSizeInput, setFontSizeInput] = useState(String(value.terminal.fontSize));
   useEffect(() => setFontSizeInput((current) => {
     const parsed = /^[+-]?\d+$/.test(current.trim()) ? Number(current) : NaN;
@@ -113,7 +114,13 @@ export function TerminalSettingsSection({ value, fonts, onChange, smoothScrollin
   return (
     <fieldset className="svs-settings-section screen-section terminal-section">
       <legend><SectionIcon name="terminal" />Terminal</legend>
-      <label className="svs-field resolution-control">ANSI color profile<select value={value.terminal.colorProfile} data-testid="color-profile-select" onChange={(event) => update({ colorProfile: event.target.value as ColorProfileId })}>{COLOR_PROFILES.map((profile) => <option key={profile.id} value={profile.id}>{profile.label}</option>)}</select></label>
+      <label className="svs-field resolution-control">ANSI color profile<select value={value.terminal.colorProfile} data-testid="color-profile-select" onChange={(event) => update({ colorProfile: event.target.value as ColorProfileId })}>
+        <optgroup label="Built-in palettes">{COLOR_PROFILES.map((profile) => <option key={profile.id} value={profile.id}>{profile.label}</option>)}</optgroup>
+        {(customProfiles.length > 0 || (value.terminal.colorProfile.startsWith('lua:') && !customProfiles.some((profile) => profile.id === value.terminal.colorProfile))) && <optgroup label="User palettes">
+          {customProfiles.map((profile) => <option key={profile.id} value={profile.id}>{profile.label}</option>)}
+          {value.terminal.colorProfile.startsWith('lua:') && !customProfiles.some((profile) => profile.id === value.terminal.colorProfile) && <option value={value.terminal.colorProfile}>Missing palette ({value.terminal.colorProfile})</option>}
+        </optgroup>}
+      </select></label>
       <div className="svs-font-row font-control-row">
         <label className="svs-field resolution-control font-name-control">Console font<select value={value.terminal.fontFamily} onChange={(event) => update({ fontFamily: event.target.value })}>{!fonts.includes(value.terminal.fontFamily) && <option value={value.terminal.fontFamily}>{value.terminal.fontFamily} (fallback)</option>}{fonts.map((font) => <option key={font} value={font}>{font}</option>)}</select></label>
         <label className="svs-field resolution-control font-size-control">Size<input type="number" min={6} max={32} step={1} value={fontSizeInput} onChange={(event) => { const next = event.target.value; setFontSizeInput(next); const parsed = /^[+-]?\d+$/.test(next.trim()) ? Number(next) : NaN; if (parsed >= 6 && parsed <= 32) update({ fontSize: parsed }); }} onBlur={commitFontSize} onKeyDown={(event) => { if (event.key === 'Enter') commitFontSize(); }} /></label>

@@ -21,8 +21,11 @@ SVS has three independent entrypoints. Import only what the host uses.
 - `profileToRenderSettings(profile)` and `profileFromRenderSettings(settings, modeId)`
 - `profileToJSON(profile)`
 - `profileFromLegacyPreset(preset, modes?)` and `legacyPresetFromProfile(profile)`
+- `replaceCustomColorProfiles(profiles)` validates and atomically replaces the `lua:` palette registry; `getCustomColorProfiles()` returns a read-only snapshot.
 
-`normalizeProfile()` returns `null` for a payload that is neither the canonical nor supported legacy schema. It clamps supported numeric values, rejects invalid enum values, maps historical terminal colour profile aliases, and chooses a valid fallback mode.
+`normalizeProfile()` returns `null` for a payload that is neither the canonical nor supported legacy schema. It clamps supported numeric values, rejects invalid enum values, maps historical terminal colour profile aliases, and chooses a valid fallback mode. Syntactically valid `lua:` palette IDs are preserved when their definition is not currently registered; rendering uses the built-in fallback until the host loads that palette.
+
+Custom ANSI palettes use `id: "lua:<name>"`, a nonempty `label`, `foreground`, `background`, optional `cursor`, and exactly 16 or 256 `#RRGGBB` colors. Register the host's current definitions before rendering. Replacing a palette under the same ID updates future terminal renders; built-in IDs cannot be replaced.
 
 ### Rendering
 
@@ -71,7 +74,7 @@ Exported helpers include `terminalDimensions`, `fontCellSize`, `canvasFont`, ter
 All React sections are controlled. They receive current host state and emit whole updated values; they do not access storage or create a renderer.
 
 - `DisplaySettingsSection({ value, modes, onChange })` — virtual mode, independent anti-moiré output resolve, and source pixel smoothing.
-- `TerminalSettingsSection({ value, fonts, onChange, smoothScrolling? })` — ANSI profile, font, cell metrics, cursor, and optional host-owned scroll controls.
+- `TerminalSettingsSection({ value, fonts, onChange, smoothScrolling? })` — built-in and registered user ANSI profiles, font, cell metrics, cursor, and optional host-owned scroll controls.
 - `AdvancedCRTSettingsSection({ value, onChange })` — the complete CRT panel; `CRTSettingsSection` remains its compatibility alias.
 - `PresetSettingsSection({ value, names, disabled?, onNameChange, onLoad, onSave })`
 - `Knob`, `Switch`, `SegmentedControl`, and `formatValue` for a host's adjacent settings.

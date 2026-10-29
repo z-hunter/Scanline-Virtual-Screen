@@ -1,4 +1,5 @@
 export const COLOR_PROFILE_IDS = ['dos-vga', 'windows-legacy', 'windows-campbell', 'xterm-x11', 'solarized-dark', 'ibm-3279', 'commodore-64', 'commodore-128', 'cyberpunk', 'chalkbox', 'inverted'];
+const customProfileId = /^lua:[A-Za-z0-9][A-Za-z0-9._-]*$/;
 const xtermCube = () => {
     const colors = [];
     const level = [0, 95, 135, 175, 215, 255];
@@ -60,12 +61,36 @@ const profiles = [
     },
 ];
 export const DEFAULT_COLOR_PROFILE_ID = 'dos-vga';
-export const COLOR_PROFILES = profiles;
+function immutableProfile(profile) {
+    return Object.freeze({ ...profile, colors: Object.freeze([...profile.colors]) });
+}
+export const COLOR_PROFILES = Object.freeze(profiles.map(immutableProfile));
+let customProfiles = Object.freeze([]);
+let customById = new Map();
 export function isColorProfile(value) {
-    return typeof value === 'string' && COLOR_PROFILE_IDS.includes(value);
+    return typeof value === 'string' && (COLOR_PROFILE_IDS.includes(value) || customProfileId.test(value));
 }
 export function colorProfile(id) {
-    return COLOR_PROFILES.find((profile) => profile.id === id) ?? COLOR_PROFILES[1];
+    return customById.get(id) ?? COLOR_PROFILES.find((profile) => profile.id === id) ?? COLOR_PROFILES[1];
+}
+export function replaceCustomColorProfiles(profiles) {
+    const next = new Map();
+    for (const profile of profiles) {
+        if (!profile || !customProfileId.test(profile.id) || COLOR_PROFILE_IDS.includes(profile.id) ||
+            next.has(profile.id) || typeof profile.label !== 'string' || !profile.label.trim() ||
+            !/^#[\da-f]{6}$/i.test(profile.foreground) || !/^#[\da-f]{6}$/i.test(profile.background) ||
+            (profile.cursor !== undefined && !/^#[\da-f]{6}$/i.test(profile.cursor)) ||
+            !Array.isArray(profile.colors) || (profile.colors.length !== 16 && profile.colors.length !== 256) ||
+            profile.colors.some((color) => typeof color !== 'string' || !/^#[\da-f]{6}$/i.test(color))) {
+            throw new TypeError('Invalid custom color profile');
+        }
+        next.set(profile.id, immutableProfile(profile));
+    }
+    customById = next;
+    customProfiles = Object.freeze([...next.values()]);
+}
+export function getCustomColorProfiles() {
+    return Object.freeze(customProfiles.map(immutableProfile));
 }
 export function profileColor(profile, index) {
     return profile.colors[index] ?? xtermExtended[index - 16] ?? profile.background;

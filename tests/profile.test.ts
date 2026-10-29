@@ -30,4 +30,11 @@ describe('ScreenProfile', () => {
     expect(normalized?.crt.glow).toBe(1.5);
     expect(profileToRenderSettings(normalized!).consoleFont).toBe(DEFAULT_CRT_SETTINGS.consoleFont);
   });
+
+  it('preserves valid missing Lua palette references through normalization', () => {
+    const profile = normalizeProfile({ schemaVersion: 1, virtualScreen: {}, terminal: { colorProfile: 'lua:users' }, crt: {} }, defaultScreenProfile());
+    expect(profile?.terminal.colorProfile).toBe('lua:users');
+    const invalid = normalizeProfile({ schemaVersion: 1, virtualScreen: {}, terminal: { colorProfile: 'custom-profile' }, crt: {} }, defaultScreenProfile());
+    expect(invalid?.terminal.colorProfile).toBe(defaultScreenProfile().terminal.colorProfile);
+  });
 });

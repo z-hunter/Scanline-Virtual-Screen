@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { colorProfile, profileColor, remapLegacyRgb } from '../src/core/color-profiles.js';
+import { colorProfile, getCustomColorProfiles, profileColor, remapLegacyRgb, replaceCustomColorProfiles } from '../src/core/color-profiles.js';
 
 describe('terminal color profiles', () => {
   it('keeps the historical 16-color palettes and xterm extended table', () => {
@@ -24,5 +24,17 @@ describe('terminal color profiles', () => {
     expect(remapLegacyRgb(colorProfile('dos-vga'), '#0000ff')).toBe('#5555ff');
     expect(remapLegacyRgb(colorProfile('solarized-dark'), '#0000ff')).toBe('#839496');
     expect(remapLegacyRgb(colorProfile('dos-vga'), '#123456')).toBe('#123456');
+  });
+
+  it('atomically replaces validated custom profiles without allowing builtin overrides', () => {
+    const palette = { id: 'lua:users', label: "User's", foreground: '#eeeeee', background: '#111111', colors: Array(16).fill('#123456') } as const;
+    replaceCustomColorProfiles([palette]);
+    expect(colorProfile('lua:users').label).toBe("User's");
+    expect(getCustomColorProfiles()[0].colors).toHaveLength(16);
+    expect(Object.isFrozen(colorProfile('lua:users').colors)).toBe(true);
+    expect(() => replaceCustomColorProfiles([{ ...palette, id: 'dos-vga' }])).toThrow();
+    expect(colorProfile('lua:users').label).toBe("User's");
+    replaceCustomColorProfiles([]);
+    expect(colorProfile('lua:users').id).toBe('windows-legacy');
   });
 });
