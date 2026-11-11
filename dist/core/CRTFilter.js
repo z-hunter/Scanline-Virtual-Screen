@@ -728,7 +728,7 @@ export class CRTFilter {
                       #if ENABLE_BEZEL_REFLECTION
                       vec2 mirroredUV = abs(curvedUV);
                       mirroredUV = 1.0 - abs(1.0 - mirroredUV);
-                      vec3 reflection = texture2D(u_glowTexture, mirroredUV).rgb;
+                      vec3 reflection = texture2D(u_glowTexture, vec2(mirroredUV.x, 1.0 - mirroredUV.y)).rgb;
                       reflection = applyColorMode(reflection);
                       vec2 reflectionDistance = max(vec2(0.0), max(0.0 - curvedUV, curvedUV - 1.0));
                       float reflectionFade = 1.0 - smoothstep(0.0, 0.25, length(reflectionDistance));
